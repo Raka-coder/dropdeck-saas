@@ -1,0 +1,156 @@
+# DropDeck — compose LOKAL (Podman / Docker)
+# Jalankan:  podman compose up -d --build
+# Layanan:   app, queue, scheduler, vite, mariadb, phpmyadmin, rustfs, rustfs-init, mailpit
+# Catatan Podman rootless: root di dalam container = user host Anda, jadi file di
+# bind mount tetap dimiliki user host. Label ":Z" dibutuhkan pada sistem SELinux (Fedora/RHEL).
+name: dropdeck
+
+x-php: &php
+  build:
+    context: .
+    dockerfile: infra/Containerfile
+    target: dev
+  image: localhost/dropdeck-dev:latest
+  working_dir: /app
+  env_file: .env
+  volumes:
+    - ./:/app:Z
+  depends_on:
+    mariadb:
+      condition: service_healthy
+    rustfs:
+      condition: service_started
+  restart: unless-stopped
+
+services:
+  app:
+    <<: *php
+    environment:
+      RUN_MIGRATIONS: "true"
+      WAIT_FOR_DB: "true"
+      PHP_OPCACHE_VALIDATE_TIMESTAMPS: "1"
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/up"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  queue:
+    <<: *php
+    command: ["php", "artisan", "queue:listen", "--tries=3", "--timeout=120", "--sleep=3"]
+    environment:
+      RUN_MIGRATIONS: "false"
+      WAIT_FOR_DB: "true"
+      PHP_OPCACHE_VALIDATE_TIMESTAMPS: "1"
+
+  scheduler:
+    <<: *php
+    command: ["php", "artisan", "schedule:work"]
+    environment:
+      RUN_MIGRATIONS: "false"
+      WAIT_FOR_DB: "true"
+      PHP_OPCACHE_VALIDATE_TIMESTAMPS: "1"
+
+  vite:
+    image: docker.io/library/node:22-alpine
+    working_dir: /app
+    # node_modules memakai named volume agar binary alpine tidak bentrok dengan host
+    volumes:
+      - ./:/app:Z
+      - node_modules:/app/node_modules
+    command: ["sh", "-c", "npm install && npm run dev -- --host 0.0.0.0"]
+    ports:
+      - "5173:5173"
+    restart: unless-stopped
+
+  mariadb:
+    image: docker.io/library/mariadb:11.4
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    environment:
+      MARIADB_DATABASE: ${DB_DATABASE:-dropdeck}
+      MARIADB_USER: ${DB_USERNAME:-dropdeck}
+      MARIADB_PASSWORD: ${DB_PASSWORD:-secret}
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootsecret}
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    ports:
+      - "127.0.0.1:3306:3306"
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    restart: unless-stopped
+
+  # DEV SAJA — jangan dipakai di produksi
+  phpmyadmin:
+    image: docker.io/library/phpmyadmin:5
+    environment:
+      PMA_HOST: mariadb
+      PMA_USER: ${DB_USERNAME:-dropdeck}
+      PMA_PASSWORD: ${DB_PASSWORD:-secret}
+      UPLOAD_LIMIT: 64M
+    ports:
+      - "127.0.0.1:8080:80"
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # [VERIFIKASI] Nama variabel RustFS dan tag image: cek dokumentasi RustFS versi yang dipakai.
+  # Jika muncul "permission denied" pada /data, tambahkan:  user: "0:0"
+  rustfs:
+    image: docker.io/rustfs/rustfs:latest
+    environment:
+      RUSTFS_ACCESS_KEY: ${AWS_ACCESS_KEY_ID:-rustfsadmin}
+      RUSTFS_SECRET_KEY: ${AWS_SECRET_ACCESS_KEY:-rustfsadmin}
+      RUSTFS_VOLUMES: /data
+      RUSTFS_ADDRESS: ":9000"
+      RUSTFS_CONSOLE_ADDRESS: ":9001"
+      RUSTFS_CONSOLE_ENABLE: "true"
+    volumes:
+      - rustfs_data:/data
+    ports:
+      - "127.0.0.1:9000:9000"   # S3 API
+      - "127.0.0.1:9001:9001"   # Console
+    restart: unless-stopped
+
+  # Membuat bucket sekali jalan (idempotent), lalu selesai
+  rustfs-init:
+    image: docker.io/amazon/aws-cli:2
+    depends_on:
+      rustfs:
+        condition: service_started
+    environment:
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-rustfsadmin}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-rustfsadmin}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-us-east-1}
+      AWS_BUCKET: ${AWS_BUCKET:-dropdeck}
+      S3_ENDPOINT: http://rustfs:9000
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        until aws --endpoint-url "$$S3_ENDPOINT" s3api head-bucket --bucket "$$AWS_BUCKET" >/dev/null 2>&1 \
+           || aws --endpoint-url "$$S3_ENDPOINT" s3api create-bucket --bucket "$$AWS_BUCKET" >/dev/null 2>&1; do
+          echo "menunggu RustFS..."; sleep 2
+        done
+        echo "bucket $$AWS_BUCKET siap"
+    restart: "no"
+
+  mailpit:
+    image: docker.io/axllent/mailpit:latest
+    ports:
+      - "127.0.0.1:8025:8025"   # UI
+      - "127.0.0.1:1025:1025"   # SMTP
+    restart: unless-stopped
+
+volumes:
+  mariadb_data:
+  rustfs_data:
+  node_modules:

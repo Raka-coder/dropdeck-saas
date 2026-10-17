@@ -1,0 +1,107 @@
+# syntax=docker/dockerfile:1
+# DropDeck — Containerfile (Podman / Docker compatible)
+# Stages: base -> dev | (vendor -> assets -> prod)
+#
+# [VERIFIKASI] Pastikan tag image tersedia: docker.io/dunglas/frankenphp:1-php8.5
+# Jika belum ada, cek tag di Docker Hub dan ubah ARG PHP_VERSION.
+
+ARG PHP_VERSION=8.5
+
+###############################################################################
+# base: FrankenPHP + ekstensi PHP + Ghostscript
+###############################################################################
+FROM docker.io/dunglas/frankenphp:1-php${PHP_VERSION} AS base
+
+WORKDIR /app
+
+# Paket sistem: ghostscript (thumbnail PDF), curl (healthcheck), unzip/git (composer)
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        ghostscript curl unzip git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Ekstensi PHP yang dibutuhkan DropDeck
+# [VERIFIKASI] imagick harus tersedia untuk PHP 8.5; bila gagal build,
+# hapus "imagick" dan pakai GD saja (THUMBNAIL_PDF_ENABLED tetap false).
+RUN install-php-extensions \
+        pdo_mysql \
+        pcntl \
+        bcmath \
+        intl \
+        zip \
+        gd \
+        exif \
+        opcache \
+        imagick
+
+# Izinkan ImageMagick membaca PDF (default Debian memblokirnya).
+# Fitur PDF hanya dipakai bila THUMBNAIL_PDF_ENABLED=true.
+RUN for f in /etc/ImageMagick-*/policy.xml; do \
+        [ -f "$f" ] && sed -i 's/rights="none" pattern="PDF"/rights="read|write" pattern="PDF"/' "$f"; \
+    done || true
+
+COPY infra/php.ini /usr/local/etc/php/conf.d/zz-dropdeck.ini
+COPY infra/Caddyfile /etc/frankenphp/Caddyfile
+COPY infra/docker-entrypoint.sh /usr/local/bin/docker-entrypoint
+RUN chmod +x /usr/local/bin/docker-entrypoint
+
+ENV SERVER_NAME=":8000"
+EXPOSE 8000
+
+ENTRYPOINT ["docker-entrypoint"]
+CMD ["frankenphp", "run", "--config", "/etc/frankenphp/Caddyfile"]
+
+###############################################################################
+# dev: tambah composer; kode di-bind-mount dari host
+###############################################################################
+FROM base AS dev
+COPY --from=docker.io/library/composer:2 /usr/bin/composer /usr/bin/composer
+ENV APP_ENV=local
+# User non-root dibuat saat runtime via compose (userns_mode: keep-id).
+
+###############################################################################
+# vendor: composer install untuk produksi (cache layer)
+###############################################################################
+FROM base AS vendor
+COPY --from=docker.io/library/composer:2 /usr/bin/composer /usr/bin/composer
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --no-interaction --no-progress \
+        --no-scripts --prefer-dist --optimize-autoloader
+
+###############################################################################
+# assets: build Vite (butuh vendor karena flux.css ada di vendor/livewire/flux)
+###############################################################################
+FROM docker.io/library/node:22-alpine AS assets
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY vite.config.* ./
+COPY resources ./resources
+COPY public ./public
+COPY --from=vendor /app/vendor ./vendor
+RUN npm run build
+
+###############################################################################
+# prod: image final, non-root
+###############################################################################
+FROM base AS prod
+ENV APP_ENV=production APP_DEBUG=false
+
+COPY --chown=www-data:www-data . /app
+COPY --from=vendor --chown=www-data:www-data /app/vendor /app/vendor
+COPY --from=assets --chown=www-data:www-data /app/public/build /app/public/build
+
+COPY --from=docker.io/library/composer:2 /usr/bin/composer /usr/bin/composer
+RUN composer dump-autoload --optimize --no-dev --no-scripts \
+    && rm /usr/bin/composer \
+    && mkdir -p storage/framework/{cache,sessions,views} storage/logs bootstrap/cache \
+    && chown -R www-data:www-data storage bootstrap/cache
+
+# Caddy/FrankenPHP butuh direktori tulis sendiri saat non-root
+RUN mkdir -p /data/caddy /config/caddy \
+    && chown -R www-data:www-data /data /config
+
+USER www-data
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
+    CMD curl -fsS http://127.0.0.1:8000/up || exit 1

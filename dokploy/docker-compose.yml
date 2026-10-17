@@ -1,0 +1,94 @@
+# DRAFT template Dokploy (berbasis image yang sudah dipublikasikan ke registry).
+# Ganti ghcr.io/USERNAME/dropdeck:1.0.0 dengan image hasil build `target: prod`.
+# [VERIFIKASI] Format template terbaru di repositori Dokploy Templates.
+x-app-env: &app-env
+  APP_ENV: production
+  APP_DEBUG: "false"
+  APP_KEY: ${APP_KEY}
+  APP_URL: ${APP_URL}
+  APP_LOCALE: id
+  LOG_CHANNEL: stderr
+  DB_CONNECTION: mariadb
+  DB_HOST: mariadb
+  DB_PORT: "3306"
+  DB_DATABASE: dropdeck
+  DB_USERNAME: dropdeck
+  DB_PASSWORD: ${DB_PASSWORD}
+  SESSION_DRIVER: database
+  CACHE_STORE: database
+  QUEUE_CONNECTION: database
+  FILESYSTEM_DISK: vault
+  AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY}
+  AWS_SECRET_ACCESS_KEY: ${S3_SECRET_KEY}
+  AWS_DEFAULT_REGION: us-east-1
+  AWS_BUCKET: dropdeck
+  AWS_ENDPOINT: http://rustfs:9000
+  AWS_USE_PATH_STYLE_ENDPOINT: "true"
+  GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+  GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+  GOOGLE_REDIRECT_URI: ${APP_URL}/auth/google/callback
+  MAIL_MAILER: smtp
+  MAIL_HOST: ${MAIL_HOST}
+  MAIL_PORT: ${MAIL_PORT}
+  MAIL_USERNAME: ${MAIL_USERNAME}
+  MAIL_PASSWORD: ${MAIL_PASSWORD}
+  MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS}
+
+services:
+  app:
+    image: ghcr.io/USERNAME/dropdeck:1.0.0
+    restart: unless-stopped
+    environment:
+      <<: *app-env
+      RUN_MIGRATIONS: "true"
+    depends_on:
+      - mariadb
+      - rustfs
+
+  queue:
+    image: ghcr.io/USERNAME/dropdeck:1.0.0
+    restart: unless-stopped
+    command: ["php", "artisan", "queue:work", "--tries=3", "--timeout=120", "--max-time=3600", "--sleep=3"]
+    environment:
+      <<: *app-env
+      RUN_MIGRATIONS: "false"
+    depends_on:
+      - app
+
+  scheduler:
+    image: ghcr.io/USERNAME/dropdeck:1.0.0
+    restart: unless-stopped
+    command: ["php", "artisan", "schedule:work"]
+    environment:
+      <<: *app-env
+      RUN_MIGRATIONS: "false"
+    depends_on:
+      - app
+
+  mariadb:
+    image: mariadb:11.4
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: dropdeck
+      MARIADB_USER: dropdeck
+      MARIADB_PASSWORD: ${DB_PASSWORD}
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    volumes:
+      - mariadb_data:/var/lib/mysql
+
+  rustfs:
+    image: rustfs/rustfs:latest
+    restart: unless-stopped
+    environment:
+      RUSTFS_ACCESS_KEY: ${S3_ACCESS_KEY}
+      RUSTFS_SECRET_KEY: ${S3_SECRET_KEY}
+      RUSTFS_VOLUMES: /data
+      RUSTFS_ADDRESS: ":9000"
+      RUSTFS_CONSOLE_ADDRESS: ":9001"
+      RUSTFS_CONSOLE_ENABLE: "true"
+    volumes:
+      - rustfs_data:/data
+
+volumes:
+  mariadb_data: {}
+  rustfs_data: {}

@@ -1,0 +1,24 @@
+# DropDeck — Caddyfile untuk FrankenPHP (mode klasik)
+# TLS diakhiri oleh Traefik (Dokploy) / tidak dipakai di lokal.
+{
+	frankenphp
+	auto_https off
+	admin off
+}
+
+:8000 {
+	root * /app/public
+	encode zstd br gzip
+
+	# Header keamanan dasar (CSP diatur di middleware aplikasi)
+	header {
+		-Server
+		X-Content-Type-Options "nosniff"
+	}
+
+	# Blokir akses ke file dotfile dan direktori sensitif
+	@forbidden path /.* /storage/* /vendor/* /.env*
+	respond @forbidden 404
+
+	php_server
+}

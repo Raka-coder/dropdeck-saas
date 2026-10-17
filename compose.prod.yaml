@@ -1,0 +1,129 @@
+# DropDeck — compose PRODUKSI (Dokploy: service tipe "Compose")
+# - Tidak ada "ports:" ke host. Domain dipetakan di Dokploy (Traefik) ke service "app" port 8000.
+# - Variabel environment diisi di tab Environment Dokploy (Dokploy menulis file .env di samping compose).
+#   [VERIFIKASI] perilaku env_file/.env pada versi Dokploy Anda.
+# - phpMyAdmin dan Mailpit TIDAK ada di sini.
+name: dropdeck
+
+x-php: &php
+  build:
+    context: .
+    dockerfile: infra/Containerfile
+    target: prod
+  image: dropdeck-app:latest
+  env_file: .env
+  restart: unless-stopped
+  depends_on:
+    mariadb:
+      condition: service_healthy
+    rustfs:
+      condition: service_started
+
+x-fixed-env: &fixed-env
+  APP_ENV: production
+  APP_DEBUG: "false"
+  LOG_CHANNEL: stderr
+  DB_CONNECTION: mariadb
+  DB_HOST: mariadb
+  DB_PORT: "3306"
+  SESSION_DRIVER: database
+  CACHE_STORE: database
+  QUEUE_CONNECTION: database
+  FILESYSTEM_DISK: vault
+  AWS_ENDPOINT: http://rustfs:9000
+  AWS_USE_PATH_STYLE_ENDPOINT: "true"
+  PHP_OPCACHE_VALIDATE_TIMESTAMPS: "0"
+
+services:
+  app:
+    <<: *php
+    environment:
+      <<: *fixed-env
+      RUN_MIGRATIONS: "true"     # hanya service app yang migrasi
+      WAIT_FOR_DB: "true"
+    expose:
+      - "8000"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/up"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+  queue:
+    <<: *php
+    command: ["php", "artisan", "queue:work", "--tries=3", "--timeout=120", "--max-time=3600", "--sleep=3"]
+    environment:
+      <<: *fixed-env
+      RUN_MIGRATIONS: "false"
+      WAIT_FOR_DB: "true"
+
+  scheduler:
+    <<: *php
+    command: ["php", "artisan", "schedule:work"]
+    environment:
+      <<: *fixed-env
+      RUN_MIGRATIONS: "false"
+      WAIT_FOR_DB: "true"
+
+  mariadb:
+    image: docker.io/library/mariadb:11.4
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    environment:
+      MARIADB_DATABASE: ${DB_DATABASE:?isi DB_DATABASE}
+      MARIADB_USER: ${DB_USERNAME:?isi DB_USERNAME}
+      MARIADB_PASSWORD: ${DB_PASSWORD:?isi DB_PASSWORD}
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?isi DB_ROOT_PASSWORD}
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+  # [VERIFIKASI] Pin tag versi RustFS yang sudah Anda uji (hindari :latest di produksi).
+  rustfs:
+    image: docker.io/rustfs/rustfs:latest
+    environment:
+      RUSTFS_ACCESS_KEY: ${AWS_ACCESS_KEY_ID:?isi AWS_ACCESS_KEY_ID}
+      RUSTFS_SECRET_KEY: ${AWS_SECRET_ACCESS_KEY:?isi AWS_SECRET_ACCESS_KEY}
+      RUSTFS_VOLUMES: /data
+      RUSTFS_ADDRESS: ":9000"
+      RUSTFS_CONSOLE_ADDRESS: ":9001"
+      RUSTFS_CONSOLE_ENABLE: "true"
+    volumes:
+      - rustfs_data:/data
+    expose:
+      - "9000"
+      - "9001"
+    restart: unless-stopped
+
+  rustfs-init:
+    image: docker.io/amazon/aws-cli:2
+    depends_on:
+      rustfs:
+        condition: service_started
+    environment:
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-us-east-1}
+      AWS_BUCKET: ${AWS_BUCKET:-dropdeck}
+      S3_ENDPOINT: http://rustfs:9000
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        until aws --endpoint-url "$$S3_ENDPOINT" s3api head-bucket --bucket "$$AWS_BUCKET" >/dev/null 2>&1 \
+           || aws --endpoint-url "$$S3_ENDPOINT" s3api create-bucket --bucket "$$AWS_BUCKET" >/dev/null 2>&1; do
+          echo "menunggu RustFS..."; sleep 2
+        done
+        echo "bucket $$AWS_BUCKET siap"
+    restart: "no"
+
+volumes:
+  mariadb_data:
+  rustfs_data:

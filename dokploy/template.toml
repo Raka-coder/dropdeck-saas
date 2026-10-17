@@ -1,0 +1,30 @@
+# DRAFT template.toml untuk Dokploy Templates.
+# [VERIFIKASI] sintaks terbaru (variables, config.domains, config.env) di repositori Dokploy Templates.
+[variables]
+main_domain = "${domain}"
+db_password = "${password:32}"
+db_root_password = "${password:32}"
+s3_access_key = "${password:20}"
+s3_secret_key = "${password:40}"
+app_key = "${base64:32}"
+
+[config]
+[[config.domains]]
+serviceName = "app"
+port = 8000
+host = "${main_domain}"
+
+[config.env]
+APP_KEY = "base64:${app_key}"
+APP_URL = "https://${main_domain}"
+DB_PASSWORD = "${db_password}"
+DB_ROOT_PASSWORD = "${db_root_password}"
+S3_ACCESS_KEY = "${s3_access_key}"
+S3_SECRET_KEY = "${s3_secret_key}"
+GOOGLE_CLIENT_ID = ""
+GOOGLE_CLIENT_SECRET = ""
+MAIL_HOST = ""
+MAIL_PORT = "587"
+MAIL_USERNAME = ""
+MAIL_PASSWORD = ""
+MAIL_FROM_ADDRESS = "noreply@example.com"
