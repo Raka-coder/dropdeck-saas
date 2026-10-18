@@ -81,6 +81,84 @@ podman compose down -v         # hentikan + HAPUS data (DB, RustFS, node_modules
 
 > **Mailpit** tidak ada di daftar awal permintaan, tetapi ditambahkan karena verifikasi email dan reset password butuh SMTP saat pengembangan.
 
+### Troubleshooting
+
+#### SELinux Permission Denied (Fedora/RHEL)
+
+**Gejala:** `podman compose ps` menunjukkan container running, tapi:
+- `curl localhost:8000` → **403 Forbidden**
+- Log app: `stat .: permission denied`, `Could not open input file: artisan`, `cd: can't cd to /app`
+- Log queue/scheduler: `Permission denied` saat baca `/app/config`, `/app/composer.json`
+
+**Penyebab:** Provider `podman compose` (docker-compose CLI plugin) **tidak menerapkan label SELinux `:Z`** pada bind mount. Di sistem SELinux Enforcing (Fedora/RHEL), container diblokir akses ke files host.
+
+**Verifikasi:**
+```bash
+# Cek SELinux status
+getenforce   # kalau "Enforcing", ini penyebabnya
+
+# Cek mount options — kalau :Z hilang, konfirmasi
+podman inspect dropdeck-app-1 --format '{{json .Mounts}}'
+#   "Options":["rbind"]"  ← tanpa :Z bermasalah
+#   "Options":["rbind",":Z"]"  ← benar
+```
+
+**Fix — pilih salah satu:**
+
+```bash
+# Opsi A (REKOMENDASI): Install podman-compose native — apply :Z dengan benar
+pip install podman-compose
+podman compose down
+podman-compose build
+podman-compose up -d
+
+# Opsi B: Set SELinux context manual
+sudo chcon -Rt container_file_t /home/rakarestu/Documents/dropdeck
+podman compose down
+podman compose up -d
+
+# Opsi C (SUDAH DITERAPKAN): compose.yaml sudah termasuk security_opt: label:disable
+# untuk semua service PHP dan Vite. Cukup restart container:
+podman compose down
+podman compose up -d
+```
+
+> **Catatan:** `security_opt: label:disable` sudah ditambahkan di `compose.yaml` untuk semua service PHP dan Vite. Ini aman untuk development lokal. Untuk produksi (Dokploy), `compose.prod.yaml` tidak menggunakan bind mount sehingga SELinux tidak menjadi masalah.
+
+#### CSS/Tailwind Tidak Terender (Halaman Register/Login tanpa style)
+
+**Gejala:** HTML load tapi tanpa CSS — tampilan seperti HTML mentah.
+
+**Penyebab:** Vite container crash-loop dengan error `ENOTEMPTY` (node_modules corrupted) atau port mismatch (assets load dari port salah).
+
+**Verifikasi:**
+```bash
+# Cek Vite container
+podman compose ps vite          # harus Up, bukan Exited/crash-loop
+podman compose logs --tail=20 vite
+
+# Cek port — harus 5173, bukan 5174+
+curl -s http://localhost:8000/login | grep -o 'localhost:[0-9]*/'
+
+# Cak assets bisa diakcess
+curl -s -o /dev/null -w "%{http_code}" http://localhost:5173/resources/css/app.css
+```
+
+**Fix:**
+```bash
+# 1) Pastikan vite.config.js punya host 0.0.0.0 dan port 5173
+#    (sudah diterapkan di repo ini)
+
+# 2) Clean node_modules volume dan restart Vite
+podman compose down vite
+podman volume rm dropdeck_node_modules
+podman compose up -d vite
+
+# 3) Tunggu npm install selesai (~15 detik), lalu verifikasi
+podman compose logs --tail=10 vite
+curl -s http://localhost:8000/login | grep -o 'localhost:5173'
+```
+
 ## Langkah Setelah Container Jalan (M0–M1)
 
 Lakukan di dalam container (`podman compose exec app ...`).
@@ -115,12 +193,19 @@ composer require --dev larastan/larastan   # Pest/Pint biasanya sudah ada di sta
 ```
 
 ### 4. Vite di dalam container — `vite.config.js`
-Tambahkan agar HMR dapat diakses dari browser host:
+Config sudah diterapkan di repo ini:
 ```js
 server: {
     host: '0.0.0.0',
-    hmr: { host: 'localhost' },
+    port: 5173,
+    hmr: { host: 'localhost', port: 5173 },
 },
+```
+Pastikan `node_modules` volume bersih saat pertama kali start. Jika Vite crash-loop dengan error `ENOTEMPTY`, jalankan:
+```bash
+podman compose down vite
+podman volume rm dropdeck_node_modules
+podman compose up -d vite
 ```
 
 ### 5. Google login
@@ -146,16 +231,62 @@ podman compose exec app php artisan tinker
 ```
 Jika gagal, periksa log `rustfs` dan `rustfs-init`, serta kredensial di `.env`.
 
-## Deploy ke Dokploy (ringkas)
+## Deploy ke Dokploy di Proxmox Self-Hosted
 
-1. Push repositori (tanpa `.env`).
-2. Dokploy → **Create Service → Compose**, sumber: repositori, file compose: `compose.prod.yaml`.
-3. Tab **Environment**: isi variabel dari `.env.example.snippet` (mode produksi: `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL=https://...`, `APP_KEY`, `DB_*`, `AWS_*`, `GOOGLE_*`, `MAIL_*`, `DROPDECK_*`).
-4. Tab **Domains**: domain → service `app`, port `8000`, HTTPS aktif.
-5. Deploy. Service `app` menjalankan `migrate --force` dan `optimize`.
-6. Verifikasi: `/up`, daftar akun, upload, buat DropLink, unduh sebagai guest, kirim email.
+### Prasyarat
+- VM/LXC di Proxmox dengan Ubuntu 24.04 LTS (4 vCPU, 8 GB RAM recommended)
+- Docker + Compose plugin terinstall
+- Dokploy sudah di-install ([install guide](https://docs.dokploy.com/getting-started/installation))
+- Domain sudah pointing ke IP server
 
-Detail, backup, dan pemulihan: lihat `docs/02-ARCHITECTURE.md` bagian 10.
+### Langkah Deploy
+
+1. **Build image produksi secara lokal** (untuk memastikan Containerfile valid):
+   ```bash
+   podman build -f infra/Containerfile -t dropdeck-prod .
+   ```
+
+2. **Push repositori** (tanpa `.env`, `node_modules/`, `vendor/`).
+
+3. **Dokploy → Create Service → Compose**:
+   - Source: repositori
+   - Compose file: `compose.prod.yaml`
+   - Build context: root proyek
+
+4. **Tab Environment** — isi dari `.env.example.snippet`:
+   - `APP_ENV=production`
+   - `APP_DEBUG=false`
+   - `APP_URL=https://domain-kamu.com`
+   - `APP_KEY` (generate: `php artisan key:generate --show`)
+   - `DB_*` (host: `mariadb`, port: `3306`)
+   - `AWS_*` (RustFS/S3)
+   - `GOOGLE_*` (OAuth)
+   - `MAIL_*` (Mailpit/SMTP)
+   - `DROPDECK_*`
+
+5. **Tab Domains**:
+   - Domain: `domain-kamu.com`
+   - Service: `app`
+   - Port: `8000`
+   - HTTPS: aktifkan (Let's Encrypt via Traefik)
+
+6. **Deploy** — service `app` otomatis jalankan `migrate --force` + `optimize`.
+
+7. **Verifikasi**:
+   - `https://domain-kamu.com/up` → harus return 200
+   - Daftar akun, login
+   - Upload file, buat DropLink
+   - Unduh sebagai guest
+   - Kirim email verifikasi (cek Mailpit)
+
+### Catatan Produksi
+
+- `compose.prod.yaml` memakai image build dari Containerfile (bukan bind mount), jadi SELinux tidak jadi masalah.
+- Volume `mariadb_data` dan `rustfs_data` persist di server Proxmox.
+- Backup: `podman compose -f compose.prod.yaml exec mariadb mariadb-dump -u root -p<password> dropdeck > backup.sql`
+- Log: `podman compose -f compose.prod.yaml logs -f app`
+
+Detail arsitektur, backup, dan pemulihan: lihat `docs/02-ARCHITECTURE.md` bagian 10.
 
 ## Daftar [VERIFIKASI]
 
