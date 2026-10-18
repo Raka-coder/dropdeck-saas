@@ -159,6 +159,22 @@ podman compose logs --tail=10 vite
 curl -s http://localhost:8000/login | grep -o 'localhost:5173'
 ```
 
+#### Google OAuth "Missing required parameter: client_id"
+
+**Gejala:** Klik tombol Google login → error 400 "Missing required parameter: client_id".
+
+**Penyebab:** Compose `env_file: .env` hanya dibaca saat container **dibuat**. Variabel yang ditambahkan setelah container running tidak ter-load.
+
+**Fix:**
+```bash
+podman compose up -d --force-recreate app queue scheduler
+```
+
+Setelah recreate, verifikasi:
+```bash
+podman compose exec app php artisan tinker --execute='echo config("services.google.client_id");'
+```
+
 ## Langkah Setelah Container Jalan (M0–M1)
 
 Lakukan di dalam container (`podman compose exec app ...`).
