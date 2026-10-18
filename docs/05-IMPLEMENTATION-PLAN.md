@@ -15,7 +15,7 @@
 |:--|:---|:---|:---|
 | M0 | Infrastruktur | Container, compose, RustFS, tes upload | Done |
 | M1 | Auth | Fortify, Google login, profile settings | Done |
-| M2 | Skema DB | Migrasi, model, policy, factory, seeder | Pending |
+| M2 | Skema DB | Migrasi, model, policy, factory, seeder | Done |
 | M3 | Kanban | Board, kolom, kartu, drag-drop, label, checklist | Pending |
 | M4 | Vault | Upload, kuota, download, thumbnail, hapus | Pending |
 | M5 | DropLink | Buat, publik, password, limit, revoke, log | Pending |
@@ -62,7 +62,7 @@
 
 ---
 
-## M2 — Skema Database
+## M2 — Skema Database ✅
 
 **Tujuan:** Migrasi, model, policy, factory sesuai Schema.
 
