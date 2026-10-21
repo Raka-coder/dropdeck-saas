@@ -634,7 +634,18 @@ new #[Title('Papan')] class extends Component {
 
                 <div>
                     <flux:heading size="sm">{{ __('cards.attachments') }}</flux:heading>
-                    <flux:text class="mt-1">{{ __('cards.attachments_soon') }}</flux:text>
+
+                    <div class="mt-3 space-y-4">
+                        <livewire:vault.upload-zone
+                            :card-id="$this->selectedCard->id"
+                            :key="'upload-zone-'.$this->selectedCard->id"
+                        />
+
+                        <livewire:vault.attachment-list
+                            :card-id="$this->selectedCard->id"
+                            :key="'attachment-list-'.$this->selectedCard->id"
+                        />
+                    </div>
                 </div>
             </div>
         @endif
