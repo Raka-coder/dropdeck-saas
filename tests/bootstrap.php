@@ -28,6 +28,8 @@ $overrides = [
     'MAIL_MAILER' => 'array',
     'QUEUE_CONNECTION' => 'sync',
     'SESSION_DRIVER' => 'array',
+    'FILESYSTEM_DISK' => 'local',
+    'LIVEWIRE_TEMPORARY_FILE_UPLOAD_DISK' => 'local',
 ];
 
 foreach ($overrides as $key => $value) {

@@ -1,5 +1,9 @@
 <?php
 
+use App\Models\Board;
+use App\Models\Card;
+use App\Models\User;
+use App\Support\Position;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -47,4 +51,21 @@ expect()->extend('toBeOne', function () {
 function something()
 {
     // ..
+}
+
+/**
+ * @return array{0: User, 1: Card}
+ */
+function vaultCard(): array
+{
+    $user = User::factory()->create();
+    $board = Board::factory()->create(['user_id' => $user->id]);
+    $column = $board->columns()->create(['title' => 'Todo', 'position' => Position::GAP]);
+    $card = Card::factory()->create([
+        'user_id' => $user->id,
+        'board_id' => $board->id,
+        'column_id' => $column->id,
+    ]);
+
+    return [$user, $card];
 }
