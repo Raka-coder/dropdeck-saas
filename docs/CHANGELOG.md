@@ -39,7 +39,25 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 - Route `boards.index` (`/boards`) dan `boards.show` (`/boards/{board}`) via `Route::livewire`, middleware `auth`+`verified`
 - Tes: `tests/Unit/PositionTest.php`, `tests/Feature/Boards/{BoardTest,ColumnTest,CardTest}.php` (63 tes, 133 assertion)
 
+### Added (M4 — Vault)
+- `config/dropdeck.php` — seluruh batas bisnis (kuota, ukuran file, jumlah lampiran, dsb.) + pengaturan vault (ekstensi/MIME terlarang, thumbnail)
+- `config/filesystems.php` — disk privat `vault` (S3/RustFS, `visibility: private`, path-style endpoint)
+- `app/Support/Bytes.php` — konversi & format ukuran (basis 1024, desimal koma)
+- `app/Support/FileGuard.php` — sanitasi nama, deteksi MIME dari konten, daftar ekstensi/MIME terlarang, MIME unduhan aman, `Content-Disposition` RFC 5987
+- `app/Exceptions/QuotaExceededException.php`
+- `app/Actions/Vault/StoreAttachment.php` — validasi ukuran/jumlah/ekstensi/MIME, reservasi kuota atomik, unggah ke `users/{uid}/cards/{cid}/{uuid}.{ext}`, checksum SHA-256, rollback objek bila transaksi gagal
+- `app/Actions/Vault/DeleteAttachment.php` — hapus baris + kembalikan kuota, dispatch pembersihan objek setelah commit
+- `app/Jobs/GenerateThumbnail.php` — WebP 480px via Intervention Image (Imagick/GD), batas piksel sumber, status Pending/Ready/Failed
+- `app/Jobs/DeleteStoredObjects.php` — pembersihan objek idempoten
+- `app/Http/Controllers/AttachmentController.php` — unduhan streamed + thumbnail inline, header `nosniff`, `private, no-store`, akses owner-only
+- Route `attachments.download` (`GET /attachments/{attachment}/download`) dan `attachments.thumbnail` (`GET /attachments/{attachment}/thumbnail`)
+- `app/Livewire/Vault/UploadZone.php` + `AttachmentList.php` beserta view — unggah multi-file dengan progres, daftar lampiran, konfirmasi hapus; terpasang di modal kartu
+- `lang/id/attachments.php`; `config/livewire.php` dipublikasikan dengan batas unggah sementara mengikuti `DROPDECK_MAX_FILE_MB`
+- Tes: `tests/Unit/BytesTest.php`, `tests/Feature/Vault/{FileGuard,AttachmentUpload,AttachmentDownload,AttachmentDelete,GenerateThumbnail,AttachmentUi}Test.php`
+
 ### Fixed
+- Duplikasi `FILESYSTEM_DISK` di `.env` membuat disk default menjadi `vault` (S3); Livewire lalu menolak unggahan multi-file dengan error `S3DoesntSupportMultipleFileUploads`. Kini default tetap `local`, disk `vault` dipilih eksplisit lewat `config('dropdeck.vault.disk')`, dan `tests/bootstrap.php` memaksa `FILESYSTEM_DISK=local`
+- Batas unggah sementara Livewire bawaan 12 MB menolak berkas 100 MB — `config/livewire.php` dipublikasikan dan `temporary_file_upload.rules` mengikuti batas bisnis
 - Vite container crash-loop (`ENOTEMPTY` npm error) — fixed by cleaning node_modules volume and adding explicit host/port config
 - SELinux permission denied on bind mounts — fixed with `security_opt: label:disable`
 - Vite dev server not accessible from host — fixed with `host: '0.0.0.0'` and correct port

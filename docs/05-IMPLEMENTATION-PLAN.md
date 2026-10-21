@@ -17,7 +17,7 @@
 | M1 | Auth | Fortify, Google login, profile settings | Done |
 | M2 | Skema DB | Migrasi, model, policy, factory, seeder | Done |
 | M3 | Kanban | Board, kolom, kartu, drag-drop, label, checklist | Done |
-| M4 | Vault | Upload, kuota, download, thumbnail, hapus | Pending |
+| M4 | Vault | Upload, kuota, download, thumbnail, hapus | Done |
 | M5 | DropLink | Buat, publik, password, limit, revoke, log | Pending |
 | M6 | Dashboard | Storage monitor, activity log, daftar link | Pending |
 | M7 | Hardening | Tes penuh, rate limit, header, scheduler, cleanup | Pending |
@@ -253,6 +253,13 @@
    - Attachment list dengan thumbnail
 
 **Verifikasi:** Pest — quota enforcement, extension validation, MIME detection, cascade delete.
+
+**Status:** Done. Implementasi mengikuti langkah di atas dengan catatan:
+
+- Kuota direservasi atomik lewat `UPDATE users SET storage_used_bytes = storage_used_bytes + ? WHERE ... + ? <= storage_quota_bytes` di dalam transaksi; `increment()` mengembalikan `0` bila syarat tidak terpenuhi.
+- Lampiran disimpan di disk `vault` (S3/RustFS); unggahan sementara Livewire tetap di disk `local` karena driver S3 menolak input multi-file.
+- Thumbnail PDF dinonaktifkan secara default (`THUMBNAIL_PDF_ENABLED=false`), gambar diproses ke WebP 480px.
+- Komponen `vault.upload-zone` dan `vault.attachment-list` dirender di modal kartu `⚡show.blade.php`.
 
 ---
 
