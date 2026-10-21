@@ -96,4 +96,18 @@ return [
         'pdf_thumbnail_enabled' => (bool) env('THUMBNAIL_PDF_ENABLED', false),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Dashboard
+    |--------------------------------------------------------------------------
+    |
+    | Ambang peringatan pemakaian kuota pada storage meter (PRD DASH-04).
+    |
+    */
+
+    'dashboard' => [
+        'quota_warning_percent' => (int) env('DROPDECK_QUOTA_WARNING_PERCENT', 80),
+        'quota_critical_percent' => (int) env('DROPDECK_QUOTA_CRITICAL_PERCENT', 100),
+    ],
+
 ];

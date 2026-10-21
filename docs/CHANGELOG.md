@@ -71,6 +71,15 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 - Catatan: route `POST /links` tidak dibuat terpisah — pembuatan link lewat aksi Livewire `CreateModal::save()`
 - Catatan: daftar link memakai SFC `resources/views/pages/links/⚡index.blade.php` (konvensi M3), bukan `app/Livewire/Links/Index.php`
 
+### Added (M6 — Dashboard)
+- `app/Livewire/Dashboard/Overview.php` — statistik owner-only: papan aktif (kecuali arsip), kartu, berkas, dan link aktif
+- `app/Livewire/Dashboard/StorageMeter.php` — meter kuota dengan persentase, sisa ruang, dan level `ok`/`warning`/`full`; ambang dari `config('dropdeck.dashboard')` (`quota_warning_percent` 80, `quota_critical_percent` 100)
+- `app/Livewire/Dashboard/ActivityLog.php` — log akses DropLink milik user, filter `event` + `date` (di-reset lewat `resetPage()`), paginasi 15 baris, eager-load `droplink:id,label,token,target_type`
+- View `resources/views/livewire/dashboard/{overview,storage-meter,activity-log}.blade.php` dan halaman `resources/views/pages/dashboard.blade.php` (menggantikan placeholder `resources/views/dashboard.blade.php`)
+- Route `dashboard` kini merender `pages.dashboard`
+- `lang/id/dashboard.php`
+- Tes: `tests/Feature/Dashboard/{Overview,StorageMeter,ActivityLog,Page}Test.php` (14 tes)
+
 ### Fixed
 - Duplikasi `FILESYSTEM_DISK` di `.env` membuat disk default menjadi `vault` (S3); Livewire lalu menolak unggahan multi-file dengan error `S3DoesntSupportMultipleFileUploads`. Kini default tetap `local`, disk `vault` dipilih eksplisit lewat `config('dropdeck.vault.disk')`, dan `tests/bootstrap.php` memaksa `FILESYSTEM_DISK=local`
 - Batas unggah sementara Livewire bawaan 12 MB menolak berkas 100 MB — `config/livewire.php` dipublikasikan dan `temporary_file_upload.rules` mengikuti batas bisnis

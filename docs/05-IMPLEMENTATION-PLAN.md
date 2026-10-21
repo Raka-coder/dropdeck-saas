@@ -19,7 +19,7 @@
 | M3 | Kanban | Board, kolom, kartu, drag-drop, label, checklist | Done |
 | M4 | Vault | Upload, kuota, download, thumbnail, hapus | Done |
 | M5 | DropLink | Buat, publik, password, limit, revoke, log | Done |
-| M6 | Dashboard | Storage monitor, activity log, daftar link | Pending |
+| M6 | Dashboard | Storage monitor, activity log, daftar link | Done |
 | M7 | Hardening | Tes penuh, rate limit, header, scheduler, cleanup | Pending |
 | M8 | Deploy | Dokploy compose, domain, backup | Pending |
 
