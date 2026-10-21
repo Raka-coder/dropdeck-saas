@@ -18,7 +18,7 @@
 | M2 | Skema DB | Migrasi, model, policy, factory, seeder | Done |
 | M3 | Kanban | Board, kolom, kartu, drag-drop, label, checklist | Done |
 | M4 | Vault | Upload, kuota, download, thumbnail, hapus | Done |
-| M5 | DropLink | Buat, publik, password, limit, revoke, log | Pending |
+| M5 | DropLink | Buat, publik, password, limit, revoke, log | Done |
 | M6 | Dashboard | Storage monitor, activity log, daftar link | Pending |
 | M7 | Hardening | Tes penuh, rate limit, header, scheduler, cleanup | Pending |
 | M8 | Deploy | Dokploy compose, domain, backup | Pending |

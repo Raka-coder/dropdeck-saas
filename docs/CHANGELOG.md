@@ -55,6 +55,22 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 - `lang/id/attachments.php`; `config/livewire.php` dipublikasikan dengan batas unggah sementara mengikuti `DROPDECK_MAX_FILE_MB`
 - Tes: `tests/Unit/BytesTest.php`, `tests/Feature/Vault/{FileGuard,AttachmentUpload,AttachmentDownload,AttachmentDelete,GenerateThumbnail,AttachmentUi}Test.php`
 
+### Added (M5 — DropLink)
+- `app/Models/DropLink.php` — helper `status()`, `isActive()`, `requiresPassword()`, `remainingDownloads()`, scope `active()`, dan `consumeDownload()` atomik (`UPDATE ... WHERE` syarat link hidup + kuota, increment `download_count` + `last_accessed_at` hanya bila affected row = 1)
+- `app/Actions/DropLinks/CreateDropLink.php` — validasi kepemilikan target, batas link aktif, rentang kedaluwarsa (1 jam–`link_max_days`) dan unduhan, token `Str::random(40)`, password `Hash::make`, password kosong → `null`
+- `app/Actions/DropLinks/RevokeDropLink.php` — revoke owner-only dan idempoten
+- `app/Http/Controllers/PublicDropLinkController.php` — urutan cek revoked → expired → exhausted → password → OK, halaman `noindex` + `no-referrer` + `nosniff`, stream unduhan via `FileGuard`, semua kejadian dicatat ke `droplink_accesses`
+- Route publik `d/{token}` (`droplink.show`, `droplink.unlock`, `droplink.download`, `droplink.download.attachment`) dengan `whereAlphaNumeric` + throttle; route `links.index` (`/links`) via `Route::livewire`
+- Rate limiter di `AppServiceProvider`: `droplink-page` 60/menit per IP, `droplink-download` 20/menit per IP, `droplink-password` 5/menit + 10/10 menit per `IP|token`
+- `app/Livewire/Links/CreateModal.php` + view — modal dari lampiran (`droplink-request`) maupun kartu (`droplink-request-card`), pratinjau URL + tombol salin
+- `resources/views/pages/links/⚡index.blade.php` — daftar link milik user, status, sisa unduhan, salin URL, revoke dengan konfirmasi
+- `resources/views/pages/public/droplink.blade.php` — halaman publik mandiri untuk state OK/password/revoked/expired/exhausted, dukungan link file maupun kartu
+- Tombol bagikan di `AttachmentList` dan modal kartu; item navigasi "Link" di sidebar
+- `lang/id/droplinks.php`
+- Tes: `tests/Feature/DropLinks/{CreateDropLink,PublicDropLink,CreateModal,LinksIndex}Test.php` (40 tes)
+- Catatan: route `POST /links` tidak dibuat terpisah — pembuatan link lewat aksi Livewire `CreateModal::save()`
+- Catatan: daftar link memakai SFC `resources/views/pages/links/⚡index.blade.php` (konvensi M3), bukan `app/Livewire/Links/Index.php`
+
 ### Fixed
 - Duplikasi `FILESYSTEM_DISK` di `.env` membuat disk default menjadi `vault` (S3); Livewire lalu menolak unggahan multi-file dengan error `S3DoesntSupportMultipleFileUploads`. Kini default tetap `local`, disk `vault` dipilih eksplisit lewat `config('dropdeck.vault.disk')`, dan `tests/bootstrap.php` memaksa `FILESYSTEM_DISK=local`
 - Batas unggah sementara Livewire bawaan 12 MB menolak berkas 100 MB — `config/livewire.php` dipublikasikan dan `temporary_file_upload.rules` mengikuti batas bisnis
