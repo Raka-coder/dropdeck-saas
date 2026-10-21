@@ -15,6 +15,7 @@ x-php: &php
   env_file: .env
   volumes:
     - ./:/app:Z
+    - views:/app/storage/framework/views
   security_opt:
     - label:disable
   depends_on:
@@ -158,3 +159,4 @@ volumes:
   mariadb_data:
   rustfs_data:
   node_modules:
+  views:
