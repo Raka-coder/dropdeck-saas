@@ -1,10 +1,14 @@
 <?php
 
+use App\Enums\DropLinkTarget;
+use App\Models\Attachment;
 use App\Models\Board;
 use App\Models\Card;
+use App\Models\DropLink;
 use App\Models\User;
 use App\Support\Position;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 /*
@@ -68,4 +72,37 @@ function vaultCard(): array
     ]);
 
     return [$user, $card];
+}
+
+function uploadToVault(string $path, string $content = 'payload'): void
+{
+    Storage::disk('vault')->put($path, $content);
+}
+
+/**
+ * @param  array<string, mixed>  $attributes
+ */
+function droplinkForFile(User $user, Attachment $attachment, array $attributes = []): DropLink
+{
+    return DropLink::factory()->create([
+        'user_id' => $user->id,
+        'target_type' => DropLinkTarget::File,
+        'attachment_id' => $attachment->id,
+        'card_id' => null,
+        ...$attributes,
+    ]);
+}
+
+/**
+ * @param  array<string, mixed>  $attributes
+ */
+function droplinkForCard(User $user, Card $card, array $attributes = []): DropLink
+{
+    return DropLink::factory()->create([
+        'user_id' => $user->id,
+        'target_type' => DropLinkTarget::Card,
+        'attachment_id' => null,
+        'card_id' => $card->id,
+        ...$attributes,
+    ]);
 }
