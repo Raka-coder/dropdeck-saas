@@ -36,6 +36,15 @@
                         {{ __('attachments.download') }}
                     </a>
 
+                    <flux:button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        wire:click="share({{ $attachment->id }})"
+                    >
+                        {{ __('droplinks.share') }}
+                    </flux:button>
+
                     @if ($deletingId === $attachment->id)
                         <flux:button type="button" size="sm" variant="danger" wire:click="delete">
                             {{ __('attachments.confirm_delete') }}

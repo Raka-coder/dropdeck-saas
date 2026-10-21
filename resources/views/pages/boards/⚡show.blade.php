@@ -549,13 +549,23 @@ new #[Title('Papan')] class extends Component {
                 <div class="flex items-start justify-between gap-3">
                     <flux:heading size="lg">{{ __('cards.details') }}</flux:heading>
 
-                    <flux:button
-                        variant="danger"
-                        size="sm"
-                        wire:click="confirmDeleteCard({{ $this->selectedCard->id }})"
-                    >
-                        {{ __('cards.delete') }}
-                    </flux:button>
+                    <div class="flex items-center gap-2">
+                        <flux:button
+                            variant="filled"
+                            size="sm"
+                            wire:click="$dispatch('droplink-request-card', { cardId: {{ $this->selectedCard->id }} })"
+                        >
+                            {{ __('droplinks.share') }}
+                        </flux:button>
+
+                        <flux:button
+                            variant="danger"
+                            size="sm"
+                            wire:click="confirmDeleteCard({{ $this->selectedCard->id }})"
+                        >
+                            {{ __('cards.delete') }}
+                        </flux:button>
+                    </div>
                 </div>
 
                 <form wire:submit="saveCard" class="space-y-4">
@@ -650,6 +660,8 @@ new #[Title('Papan')] class extends Component {
             </div>
         @endif
     </flux:modal>
+
+    <livewire:links.create-modal />
 
     {{-- Label manager --}}
     <flux:modal name="label-manager" class="w-full md:max-w-md">

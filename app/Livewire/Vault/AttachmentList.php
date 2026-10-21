@@ -32,6 +32,16 @@ final class AttachmentList extends Component
         //
     }
 
+    public function share(int $attachmentId): void
+    {
+        $this->resolveCard($this->cardId)
+            ->attachments()
+            ->whereKey($attachmentId)
+            ->firstOrFail();
+
+        $this->dispatch('droplink-request', attachmentId: $attachmentId);
+    }
+
     public function confirmDelete(int $attachmentId): void
     {
         $this->deletingId = $this->resolveCard($this->cardId)
