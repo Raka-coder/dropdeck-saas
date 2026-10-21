@@ -21,6 +21,13 @@ class ChecklistItem extends Model
         'position',
     ];
 
+    /**
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'is_done' => false,
+    ];
+
     protected function casts(): array
     {
         return [

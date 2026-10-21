@@ -52,7 +52,7 @@ Prinsip utama:
 | Runtime | PHP 8.5 pada FrankenPHP | Mode klasik (Caddy `php_server`); mode worker/Octane opsional |
 | Framework | Laravel 13 | Livewire starter kit, Fortify |
 | UI | Livewire + Flux UI + Tailwind CSS + Alpine.js | Alpine sudah dibundel Livewire |
-| Drag-drop | Alpine Sort plugin (`@alpinejs/sort`) atau SortableJS | Pilih satu; lihat bagian 7.2 |
+| Drag-drop | `wire:sort` native Livewire 4 | Tanpa dependency tambahan; lihat bagian 7.2 |
 | Auth | Fortify (email) + Socialite (Google) | |
 | Database | MariaDB 11.x | Driver Laravel `mariadb` |
 | Object storage | RustFS (S3-compatible) via Flysystem S3 | `league/flysystem-aws-s3-v3` |
@@ -281,8 +281,8 @@ Didefinisikan di `AppServiceProvider` lewat `RateLimiter::for()`.
 - Bahasa Indonesia via `lang/id`.
 
 ### 7.2 Kanban
-- Satu komponen Livewire `Boards\Show` memuat kolom dan kartu (eager loading `with(['cards.labels', 'cards' => withCount('attachments')])` agar tanpa N+1).
-- Interaksi drag-drop di Alpine. Rekomendasi: **`@alpinejs/sort`** (`x-sort`, `x-sort:group`) karena ringan dan terintegrasi Livewire; gunakan SortableJS bila butuh fitur lanjutan (mis. auto-scroll kolom).
+- Satu komponen SFC `pages::boards.show` (`resources/views/pages/boards/⚡show.blade.php`) memuat kolom dan kartu, eager loading `cards.labels` plus `withCount(['attachments', 'checklistItems', 'checklistItems as completed_checklist_items_count'])` agar tanpa N+1.
+- Drag-drop memakai **`wire:sort` native Livewire 4** (tanpa `@alpinejs/sort`/SortableJS): `wire:sort` + `wire:sort:item` pada daftar kolom, `wire:sort:group="cards"` + `wire:sort:group-id="{columnId}"` untuk pindah kartu antar kolom, `wire:sort:handle` pada header kolom, `wire:sort:ignore` pada kontainer kartu agar klik kartu tetap membuka modal.
 - `wire:key` unik pada setiap kolom dan kartu.
 - Modal kartu memuat detail (deskripsi, label, checklist, lampiran) secara lazy.
 

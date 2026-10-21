@@ -16,7 +16,7 @@
 | M0 | Infrastruktur | Container, compose, RustFS, tes upload | Done |
 | M1 | Auth | Fortify, Google login, profile settings | Done |
 | M2 | Skema DB | Migrasi, model, policy, factory, seeder | Done |
-| M3 | Kanban | Board, kolom, kartu, drag-drop, label, checklist | Pending |
+| M3 | Kanban | Board, kolom, kartu, drag-drop, label, checklist | Done |
 | M4 | Vault | Upload, kuota, download, thumbnail, hapus | Pending |
 | M5 | DropLink | Buat, publik, password, limit, revoke, log | Pending |
 | M6 | Dashboard | Storage monitor, activity log, daftar link | Pending |
@@ -176,49 +176,37 @@
    - `app/Actions/Boards/UpdateBoard.php`
    - `app/Actions/Boards/ArchiveBoard.php` / `RestoreBoard.php`
    - `app/Actions/Boards/DeleteBoard.php` — cascade hapus kolom+kartu+lampiran+link
-   - `app/Livewire/Boards/Index.php` — daftar board
-   - `app/Livewire/Boards/CreateModal.php`
-   - Route: `GET /boards`, `POST /boards`, `DELETE /boards/{board}`
+   - `resources/views/pages/boards/⚡index.blade.php` — daftar board + modal create/edit/archive/delete
+   - Route: `GET /boards` (`boards.index`), `GET /boards/{board}` (`boards.show`) via `Route::livewire`
 
 2. **Column:**
-   - `app/Actions/Columns/CreateColumn.php`
-   - `app/Actions/Columns/RenameColumn.php`
-   - `app/Actions/Columns/MoveColumn.php` — posisi
-   - `app/Actions/Columns/DeleteColumn.php`
-   - `app/Livewire/Boards/Column.php`
+   - `app/Actions/Columns/CreateColumn.php` / `RenameColumn.php` / `MoveColumn.php` / `DeleteColumn.php`
+   - Kolom dirender di dalam `⚡show.blade.php` (bukan komponen terpisah)
 
 3. **Card:**
-   - `app/Actions/Cards/CreateCard.php`
-   - `app/Actions/Cards/UpdateCard.php`
-   - `app/Actions/Cards/MoveCard.php` — `Position::between`, rebalance
-   - `app/Actions/Cards/DeleteCard.php`
-   - `app/Livewire/Boards/Card.php`
-   - `app/Livewire/Boards/CardModal.php`
-   - `app/Support/Position.php` — helper `between()`, `next()`
+   - `app/Actions/Cards/CreateCard.php` / `UpdateCard.php` / `MoveCard.php` / `DeleteCard.php`
+   - `app/Support/Position.php` — `GAP`, `next()`, `between()`, `sequence()`; rebalance saat tidak ada ruang integer
 
 4. **Drag-and-drop:**
-   - Install `@alpinejs/sort` (atau SortableJS)
-   - `x-sort` pada kolom, `x-sort:group` antar kolom
-   - Event → `MoveCard`/`MoveColumn` Action
-   - Optimistic UI + rollback on failure
+   - Gunakan **`wire:sort` native Livewire 4** (tanpa dependency tambahan): `wire:sort` + `wire:sort:item` pada kolom, `wire:sort:group` + `wire:sort:group-id` untuk pindah kartu antar kolom, `wire:sort:handle` pada header kolom, `wire:sort:ignore` agar kartu bisa diklik
+   - Event → `MoveCard`/`MoveColumn` Action; `wire:key` pada setiap kolom dan kartu
 
 5. **Label:**
    - `app/Actions/Labels/CreateLabel.php` / `AttachLabel.php` / `DetachLabel.php`
-   - `app/Livewire/Boards/LabelManager.php`
+   - Modal `label-manager` + toggle label pada modal kartu
 
 6. **Checklist:**
    - `app/Actions/Checklists/AddItem.php` / `ToggleItem.php` / `RemoveItem.php`
-   - Progress indicator di kartu
+   - Progress indicator (`x/y`) di kartu via `withCount`
 
 7. **Views:**
-   - `resources/views/pages/boards/index.blade.php`
-   - `resources/views/pages/boards/show.blade.php`
-   - `resources/views/livewire/boards/column.blade.php`
-   - `resources/views/livewire/boards/card.blade.php`
-   - `resources/views/livewire/boards/card-modal.blade.php`
+   - `resources/views/pages/boards/⚡index.blade.php`
+   - `resources/views/pages/boards/⚡show.blade.php` — kanban + modal kartu/label/rename/hapus
+   - Layout `layouts::app` diterapkan otomatis oleh Livewire (`component_layout`), jadi SFC hanya punya satu root element
 
 8. **Lang:**
-   - `lang/id/boards.php`, `lang/id/cards.php`, `lang/id/columns.php`
+   - `lang/id/boards.php`, `lang/id/cards.php`, `lang/id/columns.php`; `APP_LOCALE=id`
+   - Form Object: `app/Livewire/Forms/{Board,Column,Card,Label,ChecklistItem}Form.php`
 
 **Verifikasi:** Pest test — CRUD, move card antar kolom, posisi ter-simpan, isolasi user.
 

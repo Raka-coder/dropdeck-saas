@@ -46,7 +46,7 @@ class Card extends Model
      */
     public function column(): BelongsTo
     {
-        return $this->belongsTo(BoardColumn::class);
+        return $this->belongsTo(BoardColumn::class, 'column_id');
     }
 
     /**

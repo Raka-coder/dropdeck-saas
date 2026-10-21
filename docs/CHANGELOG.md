@@ -29,11 +29,25 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 - `database/seeders/DemoSeeder.php` — demo user + "Alur Konten" board (4 columns, 5 cards, labels, checklist, attachment, droplink)
 - `tests/bootstrap.php` — forces isolated test env (SQLite in-memory) when running inside the container
 
+### Added (M3 — Kanban)
+- `app/Support/Position.php` — `GAP` (1024), `next()`, `between()` (null = perlu rebalance), `sequence()`
+- 19 Action kelas: `Boards/{Create,Update,Archive,Restore,Delete}Board`, `Columns/{Create,Rename,Move,Delete}Column`, `Cards/{Create,Update,Move,Delete}Card`, `Labels/{Create,Attach,Detach}Label`, `Checklists/{Add,Toggle,Remove}Item`
+- Form Object: `app/Livewire/Forms/{Board,Card,Column,Label,ChecklistItem}Form.php` (validasi + pesan Indonesia)
+- `resources/views/pages/boards/⚡index.blade.php` — daftar board, filter arsip, modal create/edit/delete
+- `resources/views/pages/boards/⚡show.blade.php` — kanban dengan `wire:sort` native Livewire 4 (kolom + kartu antar kolom), modal kartu (deskripsi, label, checklist), modal label manager, rename/delete kolom, delete kartu
+- `lang/id/boards.php`, `lang/id/cards.php`, `lang/id/columns.php`; `APP_LOCALE=id`
+- Route `boards.index` (`/boards`) dan `boards.show` (`/boards/{board}`) via `Route::livewire`, middleware `auth`+`verified`
+- Tes: `tests/Unit/PositionTest.php`, `tests/Feature/Boards/{BoardTest,ColumnTest,CardTest}.php` (63 tes, 133 assertion)
+
 ### Fixed
 - Vite container crash-loop (`ENOTEMPTY` npm error) — fixed by cleaning node_modules volume and adding explicit host/port config
 - SELinux permission denied on bind mounts — fixed with `security_opt: label:disable`
 - Vite dev server not accessible from host — fixed with `host: '0.0.0.0'` and correct port
 - `droplinks` CHECK constraints failed on SQLite (test DB) — now guarded to MySQL/MariaDB/PostgreSQL only
+- `Card::column()` & `BoardColumn::cards()` menebak FK `board_column_id` — kini eksplisit `column_id`
+- `ChecklistItem::is_done` bernilai `null` di memori setelah `create()` (default hanya di DB) — ditambah `$attributes = ['is_done' => false]`
+- Halaman Livewire SFC gagal render 500 `MultipleRootElementsDetectedException` — layout `layouts::app` sudah otomatis, wrapper `<x-layouts::app>` dihapus
+- Halaman Livewire (mis. `/settings/profile`) 500 `filemtime(): stat failed` — Blaze menanam path absolut `base_path()` di file kelas SFC yang penamaannya content-hash; cache views kini pakai named volume `views` per-runtime (app/queue/scheduler) di `compose.yaml` supaya host & container tidak berbagi
 - Test suite ran against dev MariaDB and errored with 419 (container `env_file` overrode phpunit `<env>`) — fixed by forcing the test env in `tests/bootstrap.php`
 
 ---

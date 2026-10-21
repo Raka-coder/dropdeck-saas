@@ -14,6 +14,9 @@ Route::middleware(['guest'])->group(function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::view('dashboard', 'dashboard')->name('dashboard');
+
+    Route::livewire('boards', 'pages::boards.index')->name('boards.index');
+    Route::livewire('boards/{board}', 'pages::boards.show')->name('boards.show');
 });
 
 require __DIR__.'/settings.php';
