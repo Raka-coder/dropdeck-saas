@@ -6,7 +6,7 @@
         </div>
 
         @if (! request()->routeIs('links.activity'))
-            <flux:button size="sm" :href="route('links.activity')" wire:navigate>
+            <flux:button size="sm" variant="ghost" icon="list-checks" :href="route('links.activity')" wire:navigate>
                 {{ __('dashboard.activity.view_all') }}
             </flux:button>
         @endif
@@ -27,7 +27,7 @@
             class="max-w-48"
         />
 
-        <flux:button type="button" size="sm" wire:click="clearFilters">
+        <flux:button type="button" size="sm" variant="ghost" icon="rotate-ccw" wire:click="clearFilters">
             {{ __('dashboard.activity.reset') }}
         </flux:button>
     </div>

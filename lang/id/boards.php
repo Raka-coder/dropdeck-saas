@@ -11,6 +11,8 @@ return [
     'create' => 'Buat papan',
     'edit' => 'Ubah papan',
     'save' => 'Simpan',
+    'saving' => 'Menyimpan…',
+    'preview' => 'Pratinjau',
     'cancel' => 'Batal',
     'open' => 'Buka',
     'back' => 'Kembali',

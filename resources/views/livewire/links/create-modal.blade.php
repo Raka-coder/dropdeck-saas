@@ -12,6 +12,7 @@
                     <flux:button
                         variant="filled"
                         type="button"
+                        icon="copy"
                         x-on:click="navigator.clipboard.writeText(@js($createdUrl)); $flux.toast(@js(__('droplinks.copied')))"
                     >
                         {{ __('droplinks.copy') }}
@@ -19,7 +20,7 @@
                 </div>
 
                 <div class="flex justify-end gap-2">
-                    <flux:button variant="primary" type="button" wire:click="close">
+                    <flux:button variant="primary" type="button" icon="x" wire:click="close">
                         {{ __('droplinks.close') }}
                     </flux:button>
                 </div>
@@ -64,10 +65,10 @@
 
                 <div class="flex justify-end gap-2">
                     <flux:modal.close>
-                        <flux:button variant="filled" type="button">{{ __('droplinks.cancel') }}</flux:button>
+                        <flux:button variant="filled" type="button" icon="x">{{ __('droplinks.cancel') }}</flux:button>
                     </flux:modal.close>
 
-                    <flux:button variant="primary" type="submit">{{ __('droplinks.save') }}</flux:button>
+                    <flux:button variant="primary" type="submit" icon="check">{{ __('droplinks.save') }}</flux:button>
                 </div>
             </form>
         @endif

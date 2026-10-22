@@ -9,7 +9,7 @@
             </div>
 
             <div class="flex flex-wrap items-center gap-2">
-                <flux:button :href="route('links.index')" wire:navigate>
+                <flux:button variant="filled" icon="link" :href="route('links.index')" wire:navigate>
                     {{ __('droplinks.title') }}
                 </flux:button>
 

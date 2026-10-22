@@ -66,6 +66,15 @@ new #[Title('Papan')] class extends Component {
         Flux::modal('board-form')->show();
     }
 
+    public function validateField(string $field): void
+    {
+        if (! in_array($field, ['title', 'description', 'color'], true)) {
+            return;
+        }
+
+        $this->validateOnly('form.'.$field);
+    }
+
     public function openEdit(int $boardId): void
     {
         $board = $this->findBoard($boardId);
@@ -188,6 +197,11 @@ new #[Title('Papan')] class extends Component {
 <div>
 
     <div class="flex h-full w-full flex-1 flex-col gap-6">
+        <flux:breadcrumbs>
+            <flux:breadcrumbs.item :href="route('dashboard')" wire:navigate>{{ __('dashboard.title') }}</flux:breadcrumbs.item>
+            <flux:breadcrumbs.item>{{ __('boards.title') }}</flux:breadcrumbs.item>
+        </flux:breadcrumbs>
+
         <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
                 <flux:heading size="xl">{{ __('boards.title') }}</flux:heading>
@@ -202,7 +216,7 @@ new #[Title('Papan')] class extends Component {
                     class="max-w-56"
                 />
 
-                <flux:button variant="ghost" wire:click="$toggle('showArchived')">
+                <flux:button variant="ghost" icon="archive" wire:click="$toggle('showArchived')">
                     {{ $showArchived ? __('boards.show_active') : __('boards.show_archived') }}
                 </flux:button>
 
@@ -218,7 +232,7 @@ new #[Title('Papan')] class extends Component {
 
                 @unless ($showArchived)
                     <flux:text>{{ __('boards.empty_hint') }}</flux:text>
-                    <flux:button variant="primary" class="mt-2" wire:click="openCreate">
+                    <flux:button variant="primary" icon="plus" class="mt-2" wire:click="openCreate">
                         {{ __('boards.create') }}
                     </flux:button>
                 @endunless
@@ -246,23 +260,23 @@ new #[Title('Papan')] class extends Component {
                                 <flux:button variant="ghost" size="sm" icon="ellipsis-horizontal" />
 
                                 <flux:menu>
-                                    <flux:menu.item wire:click="openEdit({{ $board->id }})">
+                                    <flux:menu.item icon="pencil" wire:click="openEdit({{ $board->id }})">
                                         {{ __('boards.edit') }}
                                     </flux:menu.item>
 
                                     @if ($board->archived_at)
-                                        <flux:menu.item wire:click="restore({{ $board->id }})">
+                                        <flux:menu.item icon="rotate-ccw" wire:click="restore({{ $board->id }})">
                                             {{ __('boards.restore') }}
                                         </flux:menu.item>
                                     @else
-                                        <flux:menu.item wire:click="archive({{ $board->id }})">
+                                        <flux:menu.item icon="archive" wire:click="archive({{ $board->id }})">
                                             {{ __('boards.archive') }}
                                         </flux:menu.item>
                                     @endif
 
                                     <flux:menu.separator />
 
-                                    <flux:menu.item variant="danger" wire:click="confirmDelete({{ $board->id }})">
+                                    <flux:menu.item variant="danger" icon="trash-2" wire:click="confirmDelete({{ $board->id }})">
                                         {{ __('boards.delete') }}
                                     </flux:menu.item>
                                 </flux:menu>
@@ -282,7 +296,7 @@ new #[Title('Papan')] class extends Component {
                                 </flux:badge>
                             @endif
 
-                            <flux:button variant="ghost" size="sm" :href="route('boards.show', $board)" wire:navigate>
+                            <flux:button variant="ghost" size="sm" icon="external-link" :href="route('boards.show', $board)" wire:navigate>
                                 {{ __('boards.open') }}
                             </flux:button>
                         </div>
@@ -298,30 +312,102 @@ new #[Title('Papan')] class extends Component {
                 {{ $editingId ? __('boards.edit') : __('boards.new') }}
             </flux:heading>
 
-            <flux:input wire:model="form.title" :label="__('boards.name')" required autofocus />
+            <div>
+                <flux:input
+                    wire:model="form.title"
+                    x-on:blur="$wire.validateField('title')"
+                    :label="__('boards.name')"
+                    required
+                    autofocus
+                />
 
-            <flux:textarea wire:model="form.description" :label="__('boards.description')" rows="3" />
+                @error('form.title')
+                    <flux:error>{{ $message }}</flux:error>
+                @enderror
+            </div>
+
+            <div>
+                <flux:textarea
+                    wire:model="form.description"
+                    x-on:blur="$wire.validateField('description')"
+                    :label="__('boards.description')"
+                    rows="3"
+                />
+
+                @error('form.description')
+                    <flux:error>{{ $message }}</flux:error>
+                @enderror
+            </div>
 
             <div>
                 <flux:label>{{ __('boards.color') }}</flux:label>
 
-                <input
-                    type="color"
-                    wire:model="form.color"
-                    class="mt-1 h-10 w-16 cursor-pointer rounded-md border border-neutral-300 bg-transparent dark:border-neutral-700"
-                >
+                <div class="mt-1 flex flex-wrap items-center gap-3">
+                    <input
+                        type="color"
+                        wire:model.live="form.color"
+                        x-on:blur="$wire.validateField('color')"
+                        class="h-10 w-16 cursor-pointer rounded-md border border-neutral-300 bg-transparent dark:border-neutral-700"
+                    >
+
+                    <div class="flex items-center gap-2">
+                        @foreach (['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'] as $preset)
+                            <button
+                                type="button"
+                                wire:click="$set('form.color', '{{ $preset }}')"
+                                class="size-6 rounded-full border-2 border-white shadow ring-1 ring-black/10 transition hover:scale-110 dark:border-neutral-900"
+                                style="background-color: {{ $preset }}"
+                                aria-label="{{ $preset }}"
+                            ></button>
+                        @endforeach
+                    </div>
+
+                    <span class="font-mono text-xs text-neutral-500">{{ $form->color }}</span>
+                </div>
 
                 @error('form.color')
                     <flux:error>{{ $message }}</flux:error>
                 @enderror
             </div>
 
+            @if (trim($form->title) !== '')
+                <div class="rounded-lg border border-neutral-200 bg-neutral-50 p-3 dark:border-neutral-700 dark:bg-neutral-900/40">
+                    <p class="mb-2 text-xs font-medium uppercase tracking-wide text-neutral-500">
+                        {{ __('boards.preview') }}
+                    </p>
+
+                    <div class="flex items-start gap-3">
+                        <span
+                            class="mt-1 size-3 shrink-0 rounded-full ring-1 ring-black/10"
+                            style="background-color: {{ $form->color }}"
+                        ></span>
+
+                        <div class="min-w-0">
+                            <p class="truncate font-medium text-neutral-800 dark:text-neutral-100">{{ $form->title }}</p>
+
+                            @if (trim($form->description) !== '')
+                                <p class="mt-0.5 line-clamp-2 text-sm text-neutral-500">{{ $form->description }}</p>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            @endif
+
             <div class="flex justify-end gap-2">
                 <flux:modal.close>
-                    <flux:button variant="filled">{{ __('boards.cancel') }}</flux:button>
+                    <flux:button variant="filled" icon="x">{{ __('boards.cancel') }}</flux:button>
                 </flux:modal.close>
 
-                <flux:button variant="primary" type="submit">{{ __('boards.save') }}</flux:button>
+                <flux:button
+                    variant="primary"
+                    type="submit"
+                    icon="check"
+                    wire:loading.attr="disabled"
+                    wire:target="save"
+                >
+                    <span wire:loading.remove wire:target="save">{{ __('boards.save') }}</span>
+                    <span wire:loading wire:target="save">{{ __('boards.saving') }}</span>
+                </flux:button>
             </div>
         </form>
     </flux:modal>
@@ -333,10 +419,10 @@ new #[Title('Papan')] class extends Component {
 
             <div class="flex justify-end gap-2">
                 <flux:modal.close>
-                    <flux:button variant="filled">{{ __('boards.cancel') }}</flux:button>
+                    <flux:button variant="filled" icon="x">{{ __('boards.cancel') }}</flux:button>
                 </flux:modal.close>
 
-                <flux:button variant="danger" wire:click="delete">{{ __('boards.delete') }}</flux:button>
+                <flux:button variant="danger" icon="trash-2" wire:click="delete">{{ __('boards.delete') }}</flux:button>
             </div>
         </div>
     </flux:modal>

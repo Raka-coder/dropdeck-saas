@@ -29,28 +29,31 @@
                         </p>
                     </div>
 
-                    <a
-                        href="{{ route('attachments.download', $attachment) }}"
-                        class="text-sm font-medium text-blue-600 hover:underline"
+                    <flux:button
+                        size="sm"
+                        variant="ghost"
+                        icon="download"
+                        :href="route('attachments.download', $attachment)"
                     >
                         {{ __('attachments.download') }}
-                    </a>
+                    </flux:button>
 
                     <flux:button
                         type="button"
                         size="sm"
-                        variant="ghost"
+                        variant="filled"
+                        icon="share-2"
                         wire:click="share({{ $attachment->id }})"
                     >
                         {{ __('droplinks.share') }}
                     </flux:button>
 
                     @if ($deletingId === $attachment->id)
-                        <flux:button type="button" size="sm" variant="danger" wire:click="delete">
+                        <flux:button type="button" size="sm" variant="danger" icon="trash-2" wire:click="delete">
                             {{ __('attachments.confirm_delete') }}
                         </flux:button>
 
-                        <flux:button type="button" size="sm" variant="ghost" wire:click="cancelDelete">
+                        <flux:button type="button" size="sm" variant="ghost" icon="x" wire:click="cancelDelete">
                             {{ __('attachments.cancel') }}
                         </flux:button>
                     @else
@@ -58,6 +61,7 @@
                             type="button"
                             size="sm"
                             variant="ghost"
+                            icon="trash-2"
                             wire:click="confirmDelete({{ $attachment->id }})"
                         >
                             {{ __('attachments.delete') }}

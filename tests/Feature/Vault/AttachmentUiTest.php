@@ -14,6 +14,8 @@ it('renders the vault components inside the card modal', function () {
         ->call('openCard', $card->id)
         ->assertSeeLivewire(UploadZone::class)
         ->assertSeeLivewire(AttachmentList::class)
+        ->assertSee(__('attachments.drop_hint'))
+        ->assertSee(__('attachments.select_files'))
         ->assertSee(__('attachments.upload_hint', ['size' => '100 MB', 'count' => 20]));
 });
 

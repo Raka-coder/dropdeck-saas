@@ -124,7 +124,7 @@ new #[Title('Security settings')] class extends Component {
             />
 
             <div class="flex items-center gap-4">
-                <flux:button variant="primary" type="submit" data-test="update-password-button">
+                <flux:button variant="primary" type="submit" icon="check" data-test="update-password-button">
                     {{ __('Save') }}
                 </flux:button>
             </div>
@@ -145,6 +145,7 @@ new #[Title('Security settings')] class extends Component {
                             <div class="flex justify-start">
                                 <flux:button
                                     variant="danger"
+                                    icon="ban"
                                     wire:click="disable"
                                 >
                                     {{ __('Disable 2FA') }}
@@ -162,6 +163,7 @@ new #[Title('Security settings')] class extends Component {
                             <flux:modal.trigger name="two-factor-setup-modal">
                                 <flux:button
                                     variant="primary"
+                                    icon="shield-check"
                                     wire:click="$dispatch('start-two-factor-setup')"
                                 >
                                     {{ __('Enable 2FA') }}

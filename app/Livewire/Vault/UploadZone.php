@@ -37,18 +37,15 @@ final class UploadZone extends Component
     {
         $this->resetErrorBag();
 
-        $this->validate($this->rules(), $this->messages(), $this->attributes());
-    }
-
-    public function remove(int $index): void
-    {
-        unset($this->files[$index]);
-
-        $this->files = array_values($this->files);
+        $this->upload(app(StoreAttachment::class));
     }
 
     public function upload(StoreAttachment $store): void
     {
+        if ($this->files === []) {
+            return;
+        }
+
         $card = $this->resolveCard($this->cardId);
         $user = auth()->user();
 

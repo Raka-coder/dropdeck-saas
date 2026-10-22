@@ -600,11 +600,17 @@ new #[Title('Papan')] class extends Component {
 <div>
 
     <div class="flex h-full w-full flex-1 flex-col gap-4">
+        <flux:breadcrumbs>
+            <flux:breadcrumbs.item :href="route('dashboard')" wire:navigate>{{ __('dashboard.title') }}</flux:breadcrumbs.item>
+            <flux:breadcrumbs.item :href="route('boards.index')" wire:navigate>{{ __('boards.title') }}</flux:breadcrumbs.item>
+            <flux:breadcrumbs.item>{{ $board->title }}</flux:breadcrumbs.item>
+        </flux:breadcrumbs>
+
         <div class="flex flex-wrap items-center justify-between gap-3">
             <div class="flex items-center gap-3">
-                <flux:button variant="ghost" size="sm" :href="route('boards.index')" wire:navigate>
+                {{-- <flux:button variant="ghost" size="sm" icon="arrow-left" :href="route('boards.index')" wire:navigate>
                     {{ __('boards.back') }}
-                </flux:button>
+                </flux:button> --}}
 
                 <span class="size-3 rounded-full ring-1 ring-black/10" style="background-color: {{ $board->color ?? '#6366f1' }}"></span>
 
@@ -618,7 +624,7 @@ new #[Title('Papan')] class extends Component {
             </div>
 
             <div class="flex items-center gap-2">
-                <flux:button variant="ghost" x-on:click="$flux.modal('label-manager').show()">
+                <flux:button variant="ghost" icon="tag" x-on:click="$flux.modal('label-manager').show()">
                     {{ __('cards.manage_labels') }}
                 </flux:button>
 
@@ -627,18 +633,18 @@ new #[Title('Papan')] class extends Component {
 
                     <flux:menu>
                         @if ($board->archived_at)
-                            <flux:menu.item wire:click="restoreBoard">
+                            <flux:menu.item icon="rotate-ccw" wire:click="restoreBoard">
                                 {{ __('boards.restore') }}
                             </flux:menu.item>
                         @else
-                            <flux:menu.item wire:click="archiveBoard">
+                            <flux:menu.item icon="archive" wire:click="archiveBoard">
                                 {{ __('boards.archive') }}
                             </flux:menu.item>
                         @endif
 
                         <flux:menu.separator />
 
-                        <flux:menu.item variant="danger" wire:click="confirmDeleteBoard">
+                        <flux:menu.item variant="danger" icon="trash-2" wire:click="confirmDeleteBoard">
                             {{ __('boards.delete') }}
                         </flux:menu.item>
                     </flux:menu>
@@ -663,13 +669,13 @@ new #[Title('Papan')] class extends Component {
                             <flux:button variant="ghost" size="sm" icon="ellipsis-horizontal" />
 
                             <flux:menu>
-                                <flux:menu.item wire:click="openRenameColumn({{ $column->id }})">
+                                <flux:menu.item icon="pencil" wire:click="openRenameColumn({{ $column->id }})">
                                     {{ __('columns.rename') }}
                                 </flux:menu.item>
 
                                 <flux:menu.separator />
 
-                                <flux:menu.item variant="danger" wire:click="confirmDeleteColumn({{ $column->id }})">
+                                <flux:menu.item variant="danger" icon="trash-2" wire:click="confirmDeleteColumn({{ $column->id }})">
                                     {{ __('columns.delete') }}
                                 </flux:menu.item>
                             </flux:menu>
@@ -745,7 +751,7 @@ new #[Title('Papan')] class extends Component {
                         <flux:error class="mt-1">{{ $message }}</flux:error>
                     @enderror
 
-                    <flux:button variant="ghost" size="sm" type="submit" class="mt-2 w-full">
+                    <flux:button variant="ghost" size="sm" icon="plus" type="submit" class="mt-2 w-full">
                         {{ __('columns.add') }}
                     </flux:button>
                 </form>
@@ -757,26 +763,8 @@ new #[Title('Papan')] class extends Component {
     <flux:modal name="card-modal" class="w-full md:max-w-2xl">
         @if ($this->selectedCard)
             <div class="space-y-6">
-                <div class="flex items-start justify-between gap-3">
+                <div class="pr-8">
                     <flux:heading size="lg">{{ __('cards.details') }}</flux:heading>
-
-                    <div class="flex items-center gap-2">
-                        <flux:button
-                            variant="filled"
-                            size="sm"
-                            wire:click="$dispatch('droplink-request-card', { cardId: {{ $this->selectedCard->id }} })"
-                        >
-                            {{ __('droplinks.share') }}
-                        </flux:button>
-
-                        <flux:button
-                            variant="danger"
-                            size="sm"
-                            wire:click="confirmDeleteCard({{ $this->selectedCard->id }})"
-                        >
-                            {{ __('cards.delete') }}
-                        </flux:button>
-                    </div>
                 </div>
 
                 <form wire:submit="saveCard" class="space-y-4">
@@ -785,7 +773,7 @@ new #[Title('Papan')] class extends Component {
                     <flux:textarea wire:model="cardForm.description" :label="__('cards.description')" rows="4" />
 
                     <div class="flex justify-end">
-                        <flux:button variant="primary" type="submit">{{ __('cards.save') }}</flux:button>
+                        <flux:button variant="primary" type="submit" icon="check">{{ __('cards.save') }}</flux:button>
                     </div>
                 </form>
 
@@ -818,7 +806,7 @@ new #[Title('Papan')] class extends Component {
 
                     <form wire:submit="addChecklistItem" class="mt-2 flex items-end gap-2">
                         <flux:input wire:model="checklistForm.content" :placeholder="__('cards.checklist_placeholder')" class="flex-1" />
-                        <flux:button variant="filled" type="submit">{{ __('cards.checklist_add') }}</flux:button>
+                        <flux:button variant="filled" type="submit" icon="plus">{{ __('cards.checklist_add') }}</flux:button>
                     </form>
 
                     @error('checklistForm.content')
@@ -844,7 +832,7 @@ new #[Title('Papan')] class extends Component {
                                     <flux:button
                                         variant="ghost"
                                         size="sm"
-                                        icon="pencil-square"
+                                        icon="pencil"
                                         :tooltip="__('cards.checklist_edit')"
                                         wire:click="editChecklistItem({{ $item->id }})"
                                     />
@@ -852,7 +840,7 @@ new #[Title('Papan')] class extends Component {
                                     <flux:button
                                         variant="ghost"
                                         size="sm"
-                                        icon="trash"
+                                        icon="trash-2"
                                         :tooltip="__('cards.checklist_remove')"
                                         wire:click="removeChecklistItem({{ $item->id }})"
                                     />
@@ -877,6 +865,26 @@ new #[Title('Papan')] class extends Component {
                         />
                     </div>
                 </div>
+
+                <div class="flex flex-wrap items-center justify-end gap-2 border-t border-neutral-200 pt-4 dark:border-neutral-700">
+                    <flux:button
+                        variant="filled"
+                        size="sm"
+                        icon="share-2"
+                        wire:click="$dispatch('droplink-request-card', { cardId: {{ $this->selectedCard->id }} })"
+                    >
+                        {{ __('droplinks.share') }}
+                    </flux:button>
+
+                    <flux:button
+                        variant="danger"
+                        size="sm"
+                        icon="trash-2"
+                        wire:click="confirmDeleteCard({{ $this->selectedCard->id }})"
+                    >
+                        {{ __('cards.delete') }}
+                    </flux:button>
+                </div>
             </div>
         @endif
     </flux:modal>
@@ -890,64 +898,73 @@ new #[Title('Papan')] class extends Component {
 
             <div class="flex justify-end gap-2">
                 <flux:modal.close>
-                    <flux:button variant="filled">{{ __('boards.cancel') }}</flux:button>
+                    <flux:button variant="filled" icon="x">{{ __('boards.cancel') }}</flux:button>
                 </flux:modal.close>
 
-                <flux:button variant="danger" wire:click="deleteBoard">{{ __('boards.delete') }}</flux:button>
+                <flux:button variant="danger" icon="trash-2" wire:click="deleteBoard">{{ __('boards.delete') }}</flux:button>
             </div>
         </div>
     </flux:modal>
 
     {{-- Label manager --}}
     <flux:modal name="label-manager" class="w-full md:max-w-md">
-        <div class="space-y-5">
+        <form wire:submit="createLabel" class="space-y-5">
             <flux:heading size="lg">{{ __('cards.manage_labels') }}</flux:heading>
 
             @if ($this->labels->isEmpty())
                 <flux:text>{{ __('cards.no_labels') }}</flux:text>
             @else
-                <div class="flex flex-wrap gap-2">
+                <div class="space-y-2">
                     @foreach ($this->labels as $label)
-                        <div wire:key="label-row-{{ $label->id }}" class="flex items-center gap-1">
+                        <div wire:key="label-row-{{ $label->id }}" class="flex items-center gap-3 rounded-lg border border-neutral-200 p-2 dark:border-neutral-700">
                             <span
-                                class="rounded-full px-3 py-1 text-xs font-medium text-white"
+                                class="size-6 shrink-0 rounded-full ring-1 ring-black/10"
                                 style="background-color: {{ $label->color }}"
-                            >
-                                {{ $label->name }}
-                            </span>
+                                aria-label="{{ $label->name }}"
+                            ></span>
 
-                            <flux:button
-                                size="xs"
-                                variant="ghost"
-                                icon="pencil-square"
-                                :tooltip="__('cards.label_edit')"
-                                wire:click="editLabel({{ $label->id }})"
-                            />
+                            <div class="min-w-0 flex-1">
+                                <flux:text size="sm" class="truncate">{{ $label->name }}</flux:text>
+                            </div>
 
-                            <flux:button
-                                size="xs"
-                                variant="ghost"
-                                icon="trash"
-                                :tooltip="__('cards.label_delete')"
-                                wire:click="deleteLabel({{ $label->id }})"
-                                wire:confirm="{{ __('cards.label_delete_confirm') }}"
-                            />
+                            <div class="flex items-center gap-1">
+                                <flux:button
+                                    size="xs"
+                                    variant="ghost"
+                                    icon="pencil"
+                                    :tooltip="__('cards.label_edit')"
+                                    wire:click="editLabel({{ $label->id }})"
+                                />
+
+                                <flux:button
+                                    size="xs"
+                                    variant="ghost"
+                                    icon="trash-2"
+                                    :tooltip="__('cards.label_delete')"
+                                    wire:click="deleteLabel({{ $label->id }})"
+                                    wire:confirm="{{ __('cards.label_delete_confirm') }}"
+                                />
+                            </div>
                         </div>
                     @endforeach
                 </div>
             @endif
 
-            <form wire:submit="createLabel" class="space-y-3 border-t border-neutral-200 pt-4 dark:border-neutral-700">
+            <div class="space-y-3 border-t border-neutral-200 pt-4 dark:border-neutral-700">
                 <flux:input wire:model="labelForm.name" :label="__('cards.label_name')" />
 
                 <div>
                     <flux:label>{{ __('cards.label_color') }}</flux:label>
 
-                    <input
-                        type="color"
-                        wire:model="labelForm.color"
-                        class="mt-1 h-10 w-16 cursor-pointer rounded-md border border-neutral-300 bg-transparent dark:border-neutral-700"
-                    >
+                    <div class="mt-1 flex items-center gap-3">
+                        <input
+                            type="color"
+                            wire:model.live="labelForm.color"
+                            class="h-10 w-16 cursor-pointer rounded-md border border-neutral-300 bg-transparent dark:border-neutral-700"
+                        >
+
+                        <span class="font-mono text-xs text-neutral-500">{{ $labelForm->color }}</span>
+                    </div>
 
                     @error('labelForm.color')
                         <flux:error>{{ $message }}</flux:error>
@@ -955,10 +972,10 @@ new #[Title('Papan')] class extends Component {
                 </div>
 
                 <div class="flex justify-end">
-                    <flux:button variant="primary" type="submit">{{ __('cards.label_add') }}</flux:button>
+                    <flux:button variant="primary" type="submit" icon="plus">{{ __('cards.label_add') }}</flux:button>
                 </div>
-            </form>
-        </div>
+            </div>
+        </form>
     </flux:modal>
 
     {{-- Edit checklist item --}}
@@ -974,10 +991,10 @@ new #[Title('Papan')] class extends Component {
 
             <div class="flex justify-end gap-2">
                 <flux:modal.close>
-                    <flux:button variant="ghost">{{ __('cards.cancel') }}</flux:button>
+                    <flux:button variant="ghost" icon="x">{{ __('cards.cancel') }}</flux:button>
                 </flux:modal.close>
 
-                <flux:button variant="primary" type="submit">{{ __('cards.checklist_save') }}</flux:button>
+                <flux:button variant="primary" type="submit" icon="check">{{ __('cards.checklist_save') }}</flux:button>
             </div>
         </form>
     </flux:modal>
@@ -1005,10 +1022,10 @@ new #[Title('Papan')] class extends Component {
 
             <div class="flex justify-end gap-2">
                 <flux:modal.close>
-                    <flux:button variant="ghost">{{ __('cards.cancel') }}</flux:button>
+                    <flux:button variant="ghost" icon="x">{{ __('cards.cancel') }}</flux:button>
                 </flux:modal.close>
 
-                <flux:button variant="primary" type="submit">{{ __('cards.label_save') }}</flux:button>
+                <flux:button variant="primary" type="submit" icon="check">{{ __('cards.label_save') }}</flux:button>
             </div>
         </form>
     </flux:modal>
@@ -1022,10 +1039,10 @@ new #[Title('Papan')] class extends Component {
 
             <div class="flex justify-end gap-2">
                 <flux:modal.close>
-                    <flux:button variant="filled">{{ __('columns.cancel') }}</flux:button>
+                    <flux:button variant="filled" icon="x">{{ __('columns.cancel') }}</flux:button>
                 </flux:modal.close>
 
-                <flux:button variant="primary" type="submit">{{ __('columns.save') }}</flux:button>
+                <flux:button variant="primary" type="submit" icon="check">{{ __('columns.save') }}</flux:button>
             </div>
         </form>
     </flux:modal>
@@ -1038,10 +1055,10 @@ new #[Title('Papan')] class extends Component {
 
             <div class="flex justify-end gap-2">
                 <flux:modal.close>
-                    <flux:button variant="filled">{{ __('columns.cancel') }}</flux:button>
+                    <flux:button variant="filled" icon="x">{{ __('columns.cancel') }}</flux:button>
                 </flux:modal.close>
 
-                <flux:button variant="danger" wire:click="deleteColumn">{{ __('columns.delete') }}</flux:button>
+                <flux:button variant="danger" icon="trash-2" wire:click="deleteColumn">{{ __('columns.delete') }}</flux:button>
             </div>
         </div>
     </flux:modal>
@@ -1054,10 +1071,10 @@ new #[Title('Papan')] class extends Component {
 
             <div class="flex justify-end gap-2">
                 <flux:modal.close>
-                    <flux:button variant="filled">{{ __('cards.cancel') }}</flux:button>
+                    <flux:button variant="filled" icon="x">{{ __('cards.cancel') }}</flux:button>
                 </flux:modal.close>
 
-                <flux:button variant="danger" wire:click="deleteCard">{{ __('cards.delete') }}</flux:button>
+                <flux:button variant="danger" icon="trash-2" wire:click="deleteCard">{{ __('cards.delete') }}</flux:button>
             </div>
         </div>
     </flux:modal>

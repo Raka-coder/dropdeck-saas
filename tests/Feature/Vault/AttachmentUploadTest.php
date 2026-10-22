@@ -171,7 +171,7 @@ it('enforces the quota atomically under concurrent reservations', function () {
         ->and(Attachment::query()->count())->toBe(1);
 });
 
-it('uploads through the upload zone component', function () {
+it('uploads automatically when files are selected', function () {
     Queue::fake();
 
     [$user, $card] = vaultCard();
@@ -181,7 +181,6 @@ it('uploads through the upload zone component', function () {
 
     Livewire::test(UploadZone::class, ['cardId' => $card->id])
         ->set('files', [$file])
-        ->call('upload')
         ->assertHasNoErrors()
         ->assertDispatched('attachment-uploaded', cardId: $card->id);
 
@@ -200,7 +199,6 @@ it('reports quota errors in the upload zone', function () {
 
     Livewire::test(UploadZone::class, ['cardId' => $card->id])
         ->set('files', [$file])
-        ->call('upload')
         ->assertHasErrors('files');
 
     expect(Attachment::query()->count())->toBe(0);

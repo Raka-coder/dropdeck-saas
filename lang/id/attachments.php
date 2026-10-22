@@ -17,6 +17,8 @@ return [
     'deleted' => 'Lampiran dihapus.',
     'uploaded' => ':count berkas diunggah.',
     'select_files' => 'Pilih berkas',
+    'auto_upload_hint' => 'Berkas langsung diunggah setelah dipilih.',
+    'drop_hint' => 'Klik atau tarik berkas ke area ini',
     'file' => 'berkas',
 
     'errors' => [

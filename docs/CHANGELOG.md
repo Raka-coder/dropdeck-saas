@@ -95,6 +95,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 - Tes: `tests/Feature/Dashboard/{Overview,StorageMeter,ActivityLog,RecentLinks,Page}Test.php` (16 tes)
 
 ### Added (M7 — Hardening)
+### Added (M8 — UI polish)
+- `issues.md` seluruh checklist UI dituntaskan: tombol share/delete kartu dipindah dari header modal ke footer agar tidak menabrak close button
+- Upload berkas otomatis setelah dipilih (`UploadZone::updatedFiles()` memanggil upload), tanpa tombol unggah manual
+- Emoji diganti icon Lucide; seluruh button aktivitas diberi icon (`php artisan flux:icon` untuk icon baru)
+- Komponen breadcrumbs Flux ditambahkan di daftar papan, detail papan, daftar DropLink, dan aktivitas DropLink
+- Varian button dibatasi `primary`, `filled`, `danger`, `ghost`; audit menegaskan tidak ada varian default/tanpa varian
+- Label manager di detail papan ditata ulang seperti form board (list label per baris, preview warna, form tambah di bawah separator)
+- Icon lucide ditambahkan pada menu option (restore, rename, archive, delete board/column)
 - Rate limiter `upload` dan `droplink-create` (30/menit per user, fallback IP) di `AppServiceProvider`; ditegakkan di `UploadZone::upload()` dan `CreateModal::save()` dengan pesan `lang/id/*.errors.rate_limited`
 - `config/dropdeck.php` — `limits.upload_per_minute` dan `limits.link_create_per_minute`
 - `app/Http/Middleware/SecurityHeaders.php` — `X-Content-Type-Options`, `X-Frame-Options: DENY`, `Referrer-Policy`, dan CSP report-only; terdaftar global di `bootstrap/app.php` dan tidak menimpa header khusus response (mis. `no-referrer` halaman DropLink)

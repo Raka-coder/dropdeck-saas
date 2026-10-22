@@ -82,6 +82,7 @@
                     <flux:button
                         variant="primary"
                         type="submit"
+                        icon="arrow-right"
                         class="w-full"
                     >
                         {{ __('Continue') }}

@@ -3,6 +3,7 @@
 use App\Livewire\Links\CreateModal;
 use App\Livewire\Vault\UploadZone;
 use App\Models\Attachment;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\RateLimiter;
 use Livewire\Livewire;
 
@@ -15,7 +16,7 @@ it('blocks uploads once the per-minute limit is reached', function () {
     }
 
     Livewire::test(UploadZone::class, ['cardId' => $card->id])
-        ->call('upload')
+        ->set('files', [UploadedFile::fake()->createWithContent('catatan.pdf', '%PDF-1.4 test')])
         ->assertHasErrors(['files' => __('attachments.errors.rate_limited')]);
 });
 

@@ -124,6 +124,11 @@ new #[Title('DropLink')] class extends Component {
 
 <div>
     <div class="flex h-full w-full flex-1 flex-col gap-6">
+        <flux:breadcrumbs>
+            <flux:breadcrumbs.item :href="route('dashboard')" wire:navigate>{{ __('dashboard.title') }}</flux:breadcrumbs.item>
+            <flux:breadcrumbs.item>{{ __('droplinks.title') }}</flux:breadcrumbs.item>
+        </flux:breadcrumbs>
+
         <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
                 <flux:heading size="xl">{{ __('droplinks.title') }}</flux:heading>
@@ -131,7 +136,7 @@ new #[Title('DropLink')] class extends Component {
             </div>
 
             <div class="flex flex-wrap items-center gap-2">
-                <flux:button :href="route('links.activity')" wire:navigate>
+                <flux:button variant="ghost" icon="list-checks" :href="route('links.activity')" wire:navigate>
                     {{ __('dashboard.activity.view_all') }}
                 </flux:button>
 
@@ -179,7 +184,7 @@ new #[Title('DropLink')] class extends Component {
                                 <flux:button
                                     variant="ghost"
                                     size="sm"
-                                    icon="clipboard"
+                                    icon="copy"
                                     type="button"
                                     x-on:click="navigator.clipboard.writeText(@js(route('droplink.show', $link->token))); $flux.toast(@js(__('droplinks.copied')))"
                                 >
@@ -190,6 +195,7 @@ new #[Title('DropLink')] class extends Component {
                                     <flux:button
                                         variant="danger"
                                         size="sm"
+                                        icon="trash-2"
                                         wire:click="confirmRevoke({{ $link->id }})"
                                     >
                                         {{ __('droplinks.revoke') }}
@@ -236,7 +242,7 @@ new #[Title('DropLink')] class extends Component {
 
                 <div class="flex justify-end">
                     <flux:modal.close>
-                        <flux:button variant="filled">{{ __('droplinks.close') }}</flux:button>
+                        <flux:button variant="filled" icon="x">{{ __('droplinks.close') }}</flux:button>
                     </flux:modal.close>
                 </div>
             @else
@@ -270,10 +276,10 @@ new #[Title('DropLink')] class extends Component {
 
                 <div class="flex justify-end gap-2">
                     <flux:modal.close>
-                        <flux:button variant="filled">{{ __('droplinks.cancel') }}</flux:button>
+                        <flux:button variant="filled" icon="x">{{ __('droplinks.cancel') }}</flux:button>
                     </flux:modal.close>
 
-                    <flux:button variant="primary" wire:click="continueCreate">
+                    <flux:button variant="primary" icon="arrow-right" wire:click="continueCreate">
                         {{ __('droplinks.continue') }}
                     </flux:button>
                 </div>
@@ -290,10 +296,10 @@ new #[Title('DropLink')] class extends Component {
 
             <div class="flex justify-end gap-2">
                 <flux:modal.close>
-                    <flux:button variant="filled">{{ __('droplinks.cancel') }}</flux:button>
+                    <flux:button variant="filled" icon="x">{{ __('droplinks.cancel') }}</flux:button>
                 </flux:modal.close>
 
-                <flux:button variant="danger" wire:click="revoke">{{ __('droplinks.revoke') }}</flux:button>
+                <flux:button variant="danger" icon="trash-2" wire:click="revoke">{{ __('droplinks.revoke') }}</flux:button>
             </div>
         </div>
     </flux:modal>

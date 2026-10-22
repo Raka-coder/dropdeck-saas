@@ -23,6 +23,35 @@ it('lists only the authenticated user boards', function () {
         ->assertDontSee('Papan orang lain');
 });
 
+it('validates board fields on blur without submitting', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::boards.index')
+        ->call('validateField', 'title')
+        ->assertHasErrors(['form.title' => 'required'])
+        ->set('form.title', 'A')
+        ->call('validateField', 'title')
+        ->assertHasErrors(['form.title' => 'min'])
+        ->set('form.title', 'Papan Valid')
+        ->call('validateField', 'title')
+        ->assertHasNoErrors(['form.title']);
+});
+
+it('shows a live preview in the board form', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::boards.index')
+        ->set('form.title', 'Pratinjau Papan')
+        ->set('form.description', 'Deskripsi singkat')
+        ->assertSee(__('boards.preview'))
+        ->assertSee('Pratinjau Papan')
+        ->assertSee('Deskripsi singkat');
+});
+
 it('filters boards by title or description', function () {
     $user = User::factory()->create();
     Board::factory()->for($user)->create(['title' => 'Alur Konten', 'description' => null]);
@@ -119,7 +148,8 @@ it('renders the kanban board for the owner', function () {
         ->get(route('boards.show', $board))
         ->assertOk()
         ->assertSee('Kanban Saya')
-        ->assertSee('Kartu Pertama');
+        ->assertSee('Kartu Pertama')
+        ->assertSee('data-flux-breadcrumbs', false);
 });
 
 it('redirects guests away from boards', function () {

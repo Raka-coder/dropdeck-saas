@@ -2,7 +2,7 @@
     <div class="flex items-start justify-between gap-3">
         <flux:heading size="lg">{{ __('dashboard.links.title') }}</flux:heading>
 
-        <flux:button size="sm" variant="ghost" :href="route('links.index')" wire:navigate>
+        <flux:button size="sm" variant="ghost" icon="external-link" :href="route('links.index')" wire:navigate>
             {{ __('dashboard.links.manage') }}
         </flux:button>
     </div>
