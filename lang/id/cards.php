@@ -41,7 +41,18 @@ return [
     'label_color' => 'Warna label',
     'label_add' => 'Tambah label',
     'labels_created' => 'Label ditambahkan.',
+    'labels_updated' => 'Label diperbarui.',
+    'labels_deleted' => 'Label dihapus.',
+    'label_edit' => 'Ubah label',
+    'label_delete' => 'Hapus label',
+    'label_delete_confirm' => 'Hapus label ini? Label akan dilepas dari semua kartu.',
+    'label_save' => 'Simpan label',
     'checklist_added' => 'Item checklist ditambahkan.',
+    'checklist_updated' => 'Item checklist diperbarui.',
+    'checklist_edit' => 'Ubah item',
+    'checklist_remove' => 'Hapus item',
+    'checklist_save' => 'Simpan item',
+    'checklist_item_label' => 'Isi item',
 
     'validation' => [
         'title_required' => 'Judul kartu wajib diisi.',
@@ -55,6 +66,9 @@ return [
         'label_color_format' => 'Format warna label harus #RRGGBB.',
         'checklist_required' => 'Isi checklist wajib diisi.',
         'checklist_max' => 'Isi checklist maksimal 200 karakter.',
+        'checklist_limit' => 'Maksimal :max item checklist per kartu.',
+        'label_limit' => 'Maksimal :max label per papan.',
+        'card_limit' => 'Maksimal :max kartu per papan.',
     ],
 
     'errors' => [

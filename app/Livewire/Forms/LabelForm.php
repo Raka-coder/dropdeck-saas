@@ -15,6 +15,8 @@ class LabelForm extends Form
 
     public ?int $boardId = null;
 
+    public ?int $ignoreLabelId = null;
+
     /**
      * @return array<string, array<int, mixed>>
      */
@@ -25,7 +27,9 @@ class LabelForm extends Form
                 'required',
                 'string',
                 'max:40',
-                Rule::unique('labels', 'name')->where('board_id', $this->boardId),
+                Rule::unique('labels', 'name')
+                    ->where('board_id', $this->boardId)
+                    ->ignore($this->ignoreLabelId),
             ],
             'color' => ['required', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
         ];

@@ -136,6 +136,18 @@ it('throttles repeated password attempts', function () {
         ->assertStatus(429);
 });
 
+it('throttles repeated download attempts', function () {
+    [$user, , $attachment] = publicDropLinkFile();
+    $link = droplinkForFile($user, $attachment);
+
+    for ($attempt = 0; $attempt < 20; $attempt++) {
+        $this->post(route('droplink.download', $link->token));
+    }
+
+    $this->post(route('droplink.download', $link->token))
+        ->assertStatus(429);
+});
+
 it('streams a file and increments the download counter', function () {
     [$user, , $attachment] = publicDropLinkFile();
     $link = droplinkForFile($user, $attachment);

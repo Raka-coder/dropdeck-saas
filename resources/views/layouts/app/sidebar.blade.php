@@ -16,6 +16,10 @@
                         {{ __('Dashboard') }}
                     </flux:sidebar.item>
 
+                    <flux:sidebar.item icon="rectangle-group" :href="route('boards.index')" :current="request()->routeIs('boards.*')" wire:navigate>
+                        {{ __('boards.title') }}
+                    </flux:sidebar.item>
+
                     <flux:sidebar.item icon="link" :href="route('links.index')" :current="request()->routeIs('links.*')" wire:navigate>
                         {{ __('droplinks.title') }}
                     </flux:sidebar.item>

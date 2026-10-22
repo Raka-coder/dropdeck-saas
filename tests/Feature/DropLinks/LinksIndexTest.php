@@ -49,6 +49,29 @@ it('shows the status and remaining downloads', function () {
         ->assertSee('2');
 });
 
+it('starts a droplink from a card picked on the links page', function () {
+    [$user, $card] = vaultCard();
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::links.index')
+        ->call('openCreate')
+        ->set('targetType', 'card')
+        ->set('selectedCardId', $card->id)
+        ->call('continueCreate')
+        ->assertDispatched('droplink-request-card', cardId: $card->id);
+});
+
+it('renders the dedicated activity page', function () {
+    [$user] = vaultCard();
+
+    $this->actingAs($user)
+        ->get(route('links.activity'))
+        ->assertOk()
+        ->assertSee(__('dashboard.activity.title'))
+        ->assertDontSee(__('dashboard.activity.view_all'));
+});
+
 it('revokes an active link', function () {
     [$user, $card] = vaultCard();
     $attachment = Attachment::factory()->create(['user_id' => $user->id, 'card_id' => $card->id]);
@@ -102,4 +125,21 @@ it('renders a card link with its attachments', function () {
     $this->get(route('droplink.show', $link->token))
         ->assertOk()
         ->assertSee('kartu-satu.pdf');
+});
+
+it('starts a droplink from an attachment picked on the links page', function () {
+    [$user, $card] = vaultCard();
+    $attachment = Attachment::factory()->create([
+        'user_id' => $user->id,
+        'card_id' => $card->id,
+        'original_name' => 'dari-halaman-link.pdf',
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::links.index')
+        ->call('openCreate')
+        ->assertSet('selectedAttachmentId', $attachment->id)
+        ->call('continueCreate')
+        ->assertDispatched('droplink-request', attachmentId: $attachment->id);
 });

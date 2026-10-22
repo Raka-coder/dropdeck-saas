@@ -141,3 +141,13 @@ it('adds toggles and removes checklist items', function () {
 
     $this->assertDatabaseMissing('checklist_items', ['id' => $item->id]);
 });
+
+it('enforces the configured card limit per board', function () {
+    config(['dropdeck.limits.max_cards_per_board' => 1]);
+
+    [$board, $column] = boardWithColumn();
+    app(CreateCard::class)->handle($board, $column, 'Kartu satu');
+
+    expect(fn () => app(CreateCard::class)->handle($board, $column, 'Kartu dua'))
+        ->toThrow(ValidationException::class);
+});

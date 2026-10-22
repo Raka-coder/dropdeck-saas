@@ -67,5 +67,21 @@ class AppServiceProvider extends ServiceProvider
             Limit::perMinute(5)->by($request->ip().'|'.$request->route('token')),
             Limit::perMinutes(10, 10)->by($request->ip().'|'.$request->route('token')),
         ]);
+
+        RateLimiter::for('upload', fn (Request $request): Limit => Limit::perMinute(
+            (int) config('dropdeck.limits.upload_per_minute'),
+        )->by($this->userOrIpKey($request)));
+
+        RateLimiter::for('droplink-create', fn (Request $request): Limit => Limit::perMinute(
+            (int) config('dropdeck.limits.link_create_per_minute'),
+        )->by($this->userOrIpKey($request)));
+    }
+
+    /**
+     * Rate limit key for authenticated actions, falling back to the client IP.
+     */
+    private function userOrIpKey(Request $request): string
+    {
+        return (string) ($request->user()?->getAuthIdentifier() ?? $request->ip());
     }
 }

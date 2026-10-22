@@ -26,6 +26,7 @@ return [
     'validation' => [
         'title_required' => 'Nama kolom wajib diisi.',
         'title_max' => 'Nama kolom maksimal 60 karakter.',
+        'limit' => 'Maksimal :max kolom per papan.',
     ],
 
     'errors' => [

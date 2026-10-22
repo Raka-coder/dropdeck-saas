@@ -175,6 +175,16 @@ Setelah recreate, verifikasi:
 podman compose exec app php artisan tinker --execute='echo config("services.google.client_id");'
 ```
 
+## Status Implementasi Saat Ini
+
+- Kanban: papan, kolom, kartu, drag-drop, label, checklist, lampiran.
+- DropLink: target berkas atau kartu, kedaluwarsa, batas unduhan, password, revoke, halaman publik.
+- Dashboard: metrik live, storage meter, aktivitas, DropLink terbaru.
+- Pengaturan: profil, password, 2FA, appearance, hapus akun.
+- Vault: upload S3-compatible, kuota, penghapusan berkas dan DropLink terkait.
+- Hardening: policy isolasi user, validasi, rate limit, job pruning, reconciliaton kuota.
+- Tes: Pest 204 / 547 assertion lulus; PHPStan level 7 tanpa error; Pint bersih.
+
 ## Langkah Setelah Container Jalan (M0–M1)
 
 Lakukan di dalam container (`podman compose exec app ...`).

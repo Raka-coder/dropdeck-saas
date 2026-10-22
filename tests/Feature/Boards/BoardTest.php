@@ -8,6 +8,8 @@ use App\Actions\Boards\UpdateBoard;
 use App\Models\Board;
 use App\Models\Card;
 use App\Models\User;
+use Illuminate\Validation\ValidationException;
+use Livewire\Livewire;
 
 it('lists only the authenticated user boards', function () {
     $user = User::factory()->create();
@@ -21,13 +23,33 @@ it('lists only the authenticated user boards', function () {
         ->assertDontSee('Papan orang lain');
 });
 
+it('filters boards by title or description', function () {
+    $user = User::factory()->create();
+    Board::factory()->for($user)->create(['title' => 'Alur Konten', 'description' => null]);
+    Board::factory()->for($user)->create(['title' => 'Desain', 'description' => 'Aset visual']);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::boards.index')
+        ->set('search', 'konten')
+        ->assertSee('Alur Konten')
+        ->assertDontSee('Desain');
+
+    Livewire::test('pages::boards.index')
+        ->set('search', 'visual')
+        ->assertSee('Desain')
+        ->assertDontSee('Alur Konten');
+});
+
 it('creates a board owned by the user', function () {
     $user = User::factory()->create();
 
     $board = app(CreateBoard::class)->handle($user, 'Alur Konten', 'Deskripsi', '#112233');
 
     expect($board->user_id)->toBe($user->id)
-        ->and($board->title)->toBe('Alur Konten');
+        ->and($board->title)->toBe('Alur Konten')
+        ->and($board->columns()->orderBy('position')->pluck('title')->all())
+        ->toBe(['To Do', 'In Progress', 'Done']);
 
     $this->assertDatabaseHas('boards', [
         'id' => $board->id,
@@ -102,4 +124,14 @@ it('renders the kanban board for the owner', function () {
 
 it('redirects guests away from boards', function () {
     $this->get(route('boards.index'))->assertRedirect('/login');
+});
+
+it('enforces the configured board limit per user', function () {
+    config(['dropdeck.limits.max_boards' => 1]);
+
+    $user = User::factory()->create();
+    app(CreateBoard::class)->handle($user, 'Papan satu');
+
+    expect(fn () => app(CreateBoard::class)->handle($user, 'Papan dua'))
+        ->toThrow(ValidationException::class);
 });

@@ -20,6 +20,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('boards', 'pages::boards.index')->name('boards.index');
     Route::livewire('boards/{board}', 'pages::boards.show')->name('boards.show');
     Route::livewire('links', 'pages::links.index')->name('links.index');
+    Route::view('links/activity', 'pages.links.activity')->name('links.activity');
 
     Route::get('attachments/{attachment}/download', [AttachmentController::class, 'download'])
         ->name('attachments.download');

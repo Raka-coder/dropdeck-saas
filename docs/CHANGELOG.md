@@ -35,6 +35,19 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 - Form Object: `app/Livewire/Forms/{Board,Card,Column,Label,ChecklistItem}Form.php` (validasi + pesan Indonesia)
 - `resources/views/pages/boards/⚡index.blade.php` — daftar board, filter arsip, modal create/edit/delete
 - `resources/views/pages/boards/⚡show.blade.php` — kanban dengan `wire:sort` native Livewire 4 (kolom + kartu antar kolom), modal kartu (deskripsi, label, checklist), modal label manager, rename/delete kolom, delete kartu
+- Label CRUD lengkap: `UpdateLabel`, `DeleteLabel`, `LabelPolicy`, aksi ubah/hapus di label manager papan (hapus ikut melepas label dari kartu), `LabelForm::ignoreLabelId` agar rename tidak bentrok aturan unik; tes `tests/Feature/Boards/LabelTest.php` (6 tes)
+- Batas label per papan ditegakkan dari `dropdeck.limits.max_labels` di `CreateLabel` dan dipetakan ke error `labelForm.name`; batas item checklist dari `limits.max_checklist` di `AddItem`
+- Checklist item bisa diedit: `Actions/Checklists/UpdateItem.php`, modal `checklist-edit` di papan; tes `tests/Feature/Boards/ChecklistTest.php` (4 tes)
+- `app/Policies/BoardColumnPolicy.php` (view/update/delete owner-only) + tes isolasi `tests/Feature/Boards/PolicyIsolationTest.php`
+- Batas `limits.max_boards`, `max_columns`, dan `max_cards_per_board` ditegakkan di `CreateBoard`, `CreateColumn`, `CreateCard` dan dipetakan ke error form masing-masing; tes batas di `BoardTest`/`ColumnTest`/`CardTest`
+- Menu sidebar "Papan" ditambahkan (`boards.index`) agar Kanban dapat diakses tanpa URL manual
+- Halaman Kanban punya menu aksi papan: arsipkan/pulihkan dan hapus (dengan konfirmasi) langsung dari header
+- Halaman `/links` punya alur "Buat DropLink": pilih berkas dari modal, lalu lanjut ke form DropLink tanpa harus membuka kartu
+- Kartu statistik dashboard bisa diklik menuju Papan/DropLink
+- `PurgeAttachments` memastikan hapus kartu/kolom/papan mengurangi kuota dan menghapus objek di RustFS, bukan hanya baris DB
+- `DemoSeeder` mengunggah PDF nyata ke disk `vault`, mengisi kuota, dan membuat dua DropLink (berkas + kartu) agar demo langsung bisa diunduh
+- `.env.example` disamakan dengan setup DropDeck (MariaDB, RustFS, Mailpit, locale `id`, batas bisnis)
+- Tes: `AttachmentCascadeTest` (3), alur buat link dari halaman `/links`, aksi papan dari halaman Kanban
 - `lang/id/boards.php`, `lang/id/cards.php`, `lang/id/columns.php`; `APP_LOCALE=id`
 - Route `boards.index` (`/boards`) dan `boards.show` (`/boards/{board}`) via `Route::livewire`, middleware `auth`+`verified`
 - Tes: `tests/Unit/PositionTest.php`, `tests/Feature/Boards/{BoardTest,ColumnTest,CardTest}.php` (63 tes, 133 assertion)
@@ -75,10 +88,19 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 - `app/Livewire/Dashboard/Overview.php` — statistik owner-only: papan aktif (kecuali arsip), kartu, berkas, dan link aktif
 - `app/Livewire/Dashboard/StorageMeter.php` — meter kuota dengan persentase, sisa ruang, dan level `ok`/`warning`/`full`; ambang dari `config('dropdeck.dashboard')` (`quota_warning_percent` 80, `quota_critical_percent` 100)
 - `app/Livewire/Dashboard/ActivityLog.php` — log akses DropLink milik user, filter `event` + `date` (di-reset lewat `resetPage()`), paginasi 15 baris, eager-load `droplink:id,label,token,target_type`
-- View `resources/views/livewire/dashboard/{overview,storage-meter,activity-log}.blade.php` dan halaman `resources/views/pages/dashboard.blade.php` (menggantikan placeholder `resources/views/dashboard.blade.php`)
+- `app/Livewire/Dashboard/RecentLinks.php` — 5 DropLink terbaru milik user (label/nama target, status, kedaluwarsa) + tautan ke halaman kelola
+- View `resources/views/livewire/dashboard/{overview,storage-meter,activity-log,recent-links}.blade.php` dan halaman `resources/views/pages/dashboard.blade.php` (menggantikan placeholder `resources/views/dashboard.blade.php`)
 - Route `dashboard` kini merender `pages.dashboard`
 - `lang/id/dashboard.php`
-- Tes: `tests/Feature/Dashboard/{Overview,StorageMeter,ActivityLog,Page}Test.php` (14 tes)
+- Tes: `tests/Feature/Dashboard/{Overview,StorageMeter,ActivityLog,RecentLinks,Page}Test.php` (16 tes)
+
+### Added (M7 — Hardening)
+- Rate limiter `upload` dan `droplink-create` (30/menit per user, fallback IP) di `AppServiceProvider`; ditegakkan di `UploadZone::upload()` dan `CreateModal::save()` dengan pesan `lang/id/*.errors.rate_limited`
+- `config/dropdeck.php` — `limits.upload_per_minute` dan `limits.link_create_per_minute`
+- `app/Http/Middleware/SecurityHeaders.php` — `X-Content-Type-Options`, `X-Frame-Options: DENY`, `Referrer-Policy`, dan CSP report-only; terdaftar global di `bootstrap/app.php` dan tidak menimpa header khusus response (mis. `no-referrer` halaman DropLink)
+- `app/Jobs/PruneExpiredDropLinks.php` (retensi link mati/kedaluwarsa/habis), `PruneAccessLogs.php` (retensi log), `ReconcileStorageUsage.php` (koreksi `storage_used_bytes` dari baris lampiran)
+- `routes/console.php` — jadwal harian ketiga job + `queue:prune-failed` mingguan
+- Tes: `tests/Feature/Hardening/{SecurityHeaders,RateLimit,PruneExpiredDropLinks,PruneAccessLogs,ReconcileStorageUsage,GoogleLogin,DownloadContention}Test.php` dan `tests/Unit/DropLinkStateTest.php` (15 tes); throttle unduhan publik kini diuji eksplisit menghasilkan HTTP 429 di `PublicDropLinkTest`
 
 ### Fixed
 - Duplikasi `FILESYSTEM_DISK` di `.env` membuat disk default menjadi `vault` (S3); Livewire lalu menolak unggahan multi-file dengan error `S3DoesntSupportMultipleFileUploads`. Kini default tetap `local`, disk `vault` dipilih eksplisit lewat `config('dropdeck.vault.disk')`, dan `tests/bootstrap.php` memaksa `FILESYSTEM_DISK=local`
@@ -92,6 +114,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 - Halaman Livewire SFC gagal render 500 `MultipleRootElementsDetectedException` — layout `layouts::app` sudah otomatis, wrapper `<x-layouts::app>` dihapus
 - Halaman Livewire (mis. `/settings/profile`) 500 `filemtime(): stat failed` — Blaze menanam path absolut `base_path()` di file kelas SFC yang penamaannya content-hash; cache views kini pakai named volume `views` per-runtime (app/queue/scheduler) di `compose.yaml` supaya host & container tidak berbagi
 - Test suite ran against dev MariaDB and errored with 419 (container `env_file` overrode phpunit `<env>`) — fixed by forcing the test env in `tests/bootstrap.php`
+- Container `queue` dan `scheduler` berstatus `unhealthy` karena mewarisi `HEALTHCHECK /up` dari image dev padahal tidak membuka port web — healthcheck dinonaktifkan untuk kedua worker di `compose.yaml`
+- Login Google tidak pernah menandai email terverifikasi: `email_verified_at` tidak ada di `#[Fillable]` sehingga dibuang `firstOrCreate()`, lalu middleware `verified` memblokir dashboard. Kini controller memaksa `forceFill(['email_verified_at' => now()])->save()` bila masih kosong
 
 ---
 

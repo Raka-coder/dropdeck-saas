@@ -28,7 +28,21 @@ return [
         'link_max_downloads' => (int) env('DROPDECK_LINK_MAX_DL', 100),
         'log_retention_days' => (int) env('DROPDECK_LOG_RETENTION_DAYS', 90),
         'link_retention_days' => (int) env('DROPDECK_LINK_RETENTION_DAYS', 30),
+        'upload_per_minute' => (int) env('DROPDECK_UPLOAD_PER_MINUTE', 30),
+        'link_create_per_minute' => (int) env('DROPDECK_LINK_CREATE_PER_MINUTE', 30),
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Kolom Awal Papan
+    |--------------------------------------------------------------------------
+    |
+    | Papan baru langsung dibuat dengan kolom alur kerja dasar agar pengguna
+    | bisa mulai menambah kartu tanpa menyiapkan kolom secara manual.
+    |
+    */
+
+    'default_columns' => ['To Do', 'In Progress', 'Done'],
 
     /*
     |--------------------------------------------------------------------------

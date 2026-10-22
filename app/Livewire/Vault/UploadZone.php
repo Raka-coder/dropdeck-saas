@@ -11,6 +11,7 @@ use App\Models\User;
 use Flux\Flux;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
@@ -52,6 +53,10 @@ final class UploadZone extends Component
         $user = auth()->user();
 
         if (! $user instanceof User) {
+            return;
+        }
+
+        if ($this->isRateLimited($user)) {
             return;
         }
 
@@ -125,6 +130,21 @@ final class UploadZone extends Component
             'files' => __('attachments.title'),
             'files.*' => __('attachments.file'),
         ];
+    }
+
+    private function isRateLimited(User $user): bool
+    {
+        $key = 'upload:'.$user->id;
+
+        if (RateLimiter::tooManyAttempts($key, (int) config('dropdeck.limits.upload_per_minute'))) {
+            $this->addError('files', __('attachments.errors.rate_limited'));
+
+            return true;
+        }
+
+        RateLimiter::hit($key, 60);
+
+        return false;
     }
 
     private function remainingSlots(): int

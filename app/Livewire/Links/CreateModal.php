@@ -10,6 +10,7 @@ use App\Models\Card;
 use App\Models\User;
 use Flux\Flux;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Facades\RateLimiter;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
@@ -82,6 +83,10 @@ final class CreateModal extends Component
             return;
         }
 
+        if ($this->isRateLimited($user)) {
+            return;
+        }
+
         $link = $create->handle(
             $user,
             $this->resolveTarget(),
@@ -124,6 +129,21 @@ final class CreateModal extends Component
         }
 
         return '';
+    }
+
+    private function isRateLimited(User $user): bool
+    {
+        $key = 'droplink-create:'.$user->id;
+
+        if (RateLimiter::tooManyAttempts($key, (int) config('dropdeck.limits.link_create_per_minute'))) {
+            $this->addError('label', __('droplinks.errors.rate_limited'));
+
+            return true;
+        }
+
+        RateLimiter::hit($key, 60);
+
+        return false;
     }
 
     private function resolveTarget(): Attachment|Card

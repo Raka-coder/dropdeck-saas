@@ -1,7 +1,15 @@
 <flux:card class="space-y-4 p-5">
-    <div class="flex flex-col gap-1">
-        <flux:heading size="lg">{{ __('dashboard.activity.title') }}</flux:heading>
-        <flux:text>{{ __('dashboard.activity.subtitle') }}</flux:text>
+    <div class="flex flex-wrap items-start justify-between gap-3">
+        <div class="flex flex-col gap-1">
+            <flux:heading size="lg">{{ __('dashboard.activity.title') }}</flux:heading>
+            <flux:text>{{ __('dashboard.activity.subtitle') }}</flux:text>
+        </div>
+
+        @if (! request()->routeIs('links.activity'))
+            <flux:button size="sm" :href="route('links.activity')" wire:navigate>
+                {{ __('dashboard.activity.view_all') }}
+            </flux:button>
+        @endif
     </div>
 
     <div class="flex flex-wrap items-end gap-3">

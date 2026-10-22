@@ -22,11 +22,12 @@ class GoogleAuthController extends Controller
 
         $user = User::firstOrCreate(
             ['email' => $googleUser->getEmail()],
-            [
-                'name' => $googleUser->getName(),
-                'email_verified_at' => now(),
-            ]
+            ['name' => $googleUser->getName()],
         );
+
+        if ($user->email_verified_at === null) {
+            $user->forceFill(['email_verified_at' => now()])->save();
+        }
 
         Auth::login($user, true);
 

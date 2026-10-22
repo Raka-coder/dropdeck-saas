@@ -20,6 +20,14 @@ final class CreateCard
             ]);
         }
 
+        $limit = (int) config('dropdeck.limits.max_cards_per_board');
+
+        if ($board->cards()->count() >= $limit) {
+            throw ValidationException::withMessages([
+                'title' => __('cards.validation.card_limit', ['max' => $limit]),
+            ]);
+        }
+
         $max = $column->cards()->max('position');
 
         return $board->cards()->create([

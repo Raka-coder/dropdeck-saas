@@ -5,6 +5,7 @@ declare(strict_types=1);
 return [
     'title' => 'Dashboard',
     'subtitle' => 'Ringkasan papan, berkas, dan aktivitas DropLink Anda.',
+    'greeting' => 'Selamat datang kembali, :name.',
 
     'stats' => [
         'boards' => 'Papan aktif',
@@ -26,6 +27,14 @@ return [
         'full' => 'Kuota penyimpanan penuh. Unggahan baru akan ditolak sampai ruang tersedia.',
     ],
 
+    'links' => [
+        'title' => 'DropLink terbaru',
+        'empty' => 'Belum ada DropLink.',
+        'manage' => 'Kelola semua',
+        'untitled' => 'Tanpa nama',
+        'expires' => 'Kedaluwarsa :date',
+    ],
+
     'activity' => [
         'title' => 'Aktivitas DropLink',
         'subtitle' => 'Riwayat akses terhadap link milik Anda.',
@@ -38,6 +47,7 @@ return [
         'link' => 'Link',
         'ip' => 'IP',
         'user_agent' => 'User agent',
+        'view_all' => 'Lihat semua aktivitas',
     ],
 
     'events' => [

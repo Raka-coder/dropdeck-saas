@@ -48,6 +48,9 @@ services:
       RUN_MIGRATIONS: "false"
       WAIT_FOR_DB: "true"
       PHP_OPCACHE_VALIDATE_TIMESTAMPS: "1"
+    # Image dev membawa HEALTHCHECK /up untuk web server; worker tidak membuka port.
+    healthcheck:
+      disable: true
 
   scheduler:
     <<: *php
@@ -56,6 +59,9 @@ services:
       RUN_MIGRATIONS: "false"
       WAIT_FOR_DB: "true"
       PHP_OPCACHE_VALIDATE_TIMESTAMPS: "1"
+    # Image dev membawa HEALTHCHECK /up untuk web server; scheduler tidak membuka port.
+    healthcheck:
+      disable: true
 
   vite:
     image: docker.io/library/node:22-alpine

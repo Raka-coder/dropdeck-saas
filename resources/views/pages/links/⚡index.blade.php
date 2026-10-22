@@ -3,6 +3,8 @@
 use App\Actions\DropLinks\RevokeDropLink;
 use App\Enums\DropLinkStatus;
 use App\Enums\DropLinkTarget;
+use App\Models\Attachment;
+use App\Models\Card;
 use App\Models\DropLink;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
@@ -15,6 +17,12 @@ new #[Title('DropLink')] class extends Component {
     #[Locked]
     public ?int $revokingId = null;
 
+    public ?int $selectedAttachmentId = null;
+
+    public string $targetType = 'file';
+
+    public ?int $selectedCardId = null;
+
     /**
      * @return \Illuminate\Database\Eloquent\Collection<int, DropLink>
      */
@@ -25,6 +33,59 @@ new #[Title('DropLink')] class extends Component {
             ->with(['attachment', 'card'])
             ->latest('id')
             ->get();
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Collection<int, Attachment>
+     */
+    #[Computed]
+    public function attachments()
+    {
+        return Auth::user()->attachments()
+            ->with('card:id,title')
+            ->latest('id')
+            ->get();
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Collection<int, Card>
+     */
+    #[Computed]
+    public function cards()
+    {
+        return Card::query()
+            ->where('user_id', Auth::id())
+            ->with('board:id,title')
+            ->latest('id')
+            ->get();
+    }
+
+    public function openCreate(): void
+    {
+        $this->targetType = $this->attachments->isNotEmpty() ? 'file' : 'card';
+        $this->selectedAttachmentId = $this->attachments->first()?->id;
+        $this->selectedCardId = $this->cards->first()?->id;
+
+        Flux::modal('link-target')->show();
+    }
+
+    public function continueCreate(): void
+    {
+        Flux::modal('link-target')->close();
+
+        if ($this->targetType === 'card') {
+            $card = Card::query()
+                ->where('user_id', Auth::id())
+                ->findOrFail($this->selectedCardId);
+
+            $this->dispatch('droplink-request-card', cardId: $card->id);
+
+            return;
+        }
+
+        $attachment = Auth::user()->attachments()->findOrFail($this->selectedAttachmentId);
+
+        $this->dispatch('droplink-request', attachmentId: $attachment->id);
     }
 
     public function confirmRevoke(int $linkId): void
@@ -67,6 +128,16 @@ new #[Title('DropLink')] class extends Component {
             <div>
                 <flux:heading size="xl">{{ __('droplinks.title') }}</flux:heading>
                 <flux:text class="mt-1">{{ __('droplinks.subheading') }}</flux:text>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2">
+                <flux:button :href="route('links.activity')" wire:navigate>
+                    {{ __('dashboard.activity.view_all') }}
+                </flux:button>
+
+                <flux:button variant="primary" icon="plus" wire:click="openCreate">
+                    {{ __('droplinks.create') }}
+                </flux:button>
             </div>
         </div>
 
@@ -152,6 +223,65 @@ new #[Title('DropLink')] class extends Component {
             </div>
         @endif
     </div>
+
+    <flux:modal name="link-target" class="w-full md:max-w-md">
+        <div class="space-y-5">
+            <div>
+                <flux:heading size="lg">{{ __('droplinks.create') }}</flux:heading>
+                <flux:text class="mt-1">{{ __('droplinks.create_hint') }}</flux:text>
+            </div>
+
+            @if ($this->attachments->isEmpty() && $this->cards->isEmpty())
+                <flux:text>{{ __('droplinks.no_targets_hint') }}</flux:text>
+
+                <div class="flex justify-end">
+                    <flux:modal.close>
+                        <flux:button variant="filled">{{ __('droplinks.close') }}</flux:button>
+                    </flux:modal.close>
+                </div>
+            @else
+                <flux:radio.group wire:model.live="targetType" :label="__('droplinks.target')">
+                    @if ($this->attachments->isNotEmpty())
+                        <flux:radio value="file" :label="__('droplinks.pick_attachment')" />
+                    @endif
+
+                    @if ($this->cards->isNotEmpty())
+                        <flux:radio value="card" :label="__('droplinks.pick_card')" />
+                    @endif
+                </flux:radio.group>
+
+                @if ($targetType === 'file')
+                    <flux:select wire:model="selectedAttachmentId" :label="__('droplinks.pick_attachment')">
+                        @foreach ($this->attachments as $attachment)
+                            <flux:select.option value="{{ $attachment->id }}">
+                                {{ $attachment->original_name }}@if ($attachment->card) — {{ $attachment->card->title }}@endif
+                            </flux:select.option>
+                        @endforeach
+                    </flux:select>
+                @else
+                    <flux:select wire:model="selectedCardId" :label="__('droplinks.pick_card')">
+                        @foreach ($this->cards as $card)
+                            <flux:select.option value="{{ $card->id }}">
+                                {{ $card->title }}@if ($card->board) — {{ $card->board->title }}@endif
+                            </flux:select.option>
+                        @endforeach
+                    </flux:select>
+                @endif
+
+                <div class="flex justify-end gap-2">
+                    <flux:modal.close>
+                        <flux:button variant="filled">{{ __('droplinks.cancel') }}</flux:button>
+                    </flux:modal.close>
+
+                    <flux:button variant="primary" wire:click="continueCreate">
+                        {{ __('droplinks.continue') }}
+                    </flux:button>
+                </div>
+            @endif
+        </div>
+    </flux:modal>
+
+    <livewire:links.create-modal />
 
     <flux:modal name="revoke-droplink" class="w-full md:max-w-md">
         <div class="space-y-5">

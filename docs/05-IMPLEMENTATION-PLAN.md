@@ -20,7 +20,7 @@
 | M4 | Vault | Upload, kuota, download, thumbnail, hapus | Done |
 | M5 | DropLink | Buat, publik, password, limit, revoke, log | Done |
 | M6 | Dashboard | Storage monitor, activity log, daftar link | Done |
-| M7 | Hardening | Tes penuh, rate limit, header, scheduler, cleanup | Pending |
+| M7 | Hardening | Tes penuh, rate limit, header, scheduler, cleanup | Done |
 | M8 | Deploy | Dokploy compose, domain, backup | Pending |
 
 ---
@@ -324,16 +324,19 @@
    - Progress bar: `storage_used_bytes / storage_quota_bytes`
    - Warning 80% dan 100%
 
-2. **Activity Log:**
+2. **Daftar Link:**
+   - `app/Livewire/Dashboard/RecentLinks.php` — 5 DropLink terbaru + status + tautan kelola
+
+3. **Activity Log:**
    - `app/Livewire/Dashboard/ActivityLog.php`
    - Tabel `droplink_accesses` join `droplinks`
    - Filter by event, tanggal
 
-3. **Summary:**
+4. **Summary:**
    - `app/Livewire/Dashboard/Overview.php`
    - Count: board, kartu, file, link aktif
 
-4. **Views:**
+5. **Views:**
    - `resources/views/pages/dashboard.blade.php`
 
 **Verifikasi:** Dashboard render data benar.

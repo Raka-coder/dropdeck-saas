@@ -27,6 +27,7 @@ return [
         'quota_exceeded' => 'Kuota penyimpanan tidak mencukupi.',
         'unreadable' => 'Berkas tidak dapat dibaca.',
         'not_found' => 'Lampiran tidak ditemukan.',
+        'rate_limited' => 'Terlalu banyak unggahan. Coba lagi sebentar lagi.',
     ],
 
 ];

@@ -13,6 +13,7 @@ use App\Models\Label;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class DemoSeeder extends Seeder
@@ -79,12 +80,25 @@ class DemoSeeder extends Seeder
 
         $firstCard = $cards->first();
 
+        $contents = "%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n"
+            ."2 0 obj<</Type/Pages/Count 0/Kids[]>>endobj\n"
+            ."trailer<</Root 1 0 R>>\n%%EOF\n";
+        $path = 'attachments/'.Str::uuid()->toString().'/brief-konten.pdf';
+
+        Storage::disk('vault')->put($path, $contents);
+
         $attachment = Attachment::factory()->create([
             'user_id' => $user->id,
             'card_id' => $firstCard->id,
             'original_name' => 'brief-konten.pdf',
-            'path' => 'attachments/'.Str::uuid()->toString().'/brief-konten.pdf',
+            'path' => $path,
+            'size_bytes' => strlen($contents),
+            'checksum_sha256' => hash('sha256', $contents),
         ]);
+
+        $user->forceFill([
+            'storage_used_bytes' => $user->storage_used_bytes + $attachment->size_bytes,
+        ])->save();
 
         DropLink::factory()->create([
             'user_id' => $user->id,
@@ -94,6 +108,16 @@ class DemoSeeder extends Seeder
             'token' => Str::random(40),
             'label' => 'Brief untuk klien',
             'expires_at' => now()->addDays(7),
+        ]);
+
+        DropLink::factory()->create([
+            'user_id' => $user->id,
+            'target_type' => DropLinkTarget::Card,
+            'attachment_id' => null,
+            'card_id' => $firstCard->id,
+            'token' => Str::random(40),
+            'label' => 'Kartu contoh',
+            'expires_at' => now()->addDays(14),
         ]);
     }
 }

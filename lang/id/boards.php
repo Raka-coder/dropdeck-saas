@@ -21,6 +21,7 @@ return [
     'empty' => 'Belum ada papan',
     'empty_hint' => 'Buat papan pertama untuk mulai mengatur pekerjaan.',
     'archived_empty' => 'Tidak ada papan yang diarsipkan.',
+    'search_placeholder' => 'Cari papan...',
     'show_archived' => 'Lihat arsip',
     'show_active' => 'Lihat papan aktif',
     'archived_badge' => 'Diarsipkan',
@@ -44,6 +45,7 @@ return [
         'description_max' => 'Deskripsi maksimal 500 karakter.',
         'color_required' => 'Warna wajib dipilih.',
         'color_format' => 'Format warna harus #RRGGBB.',
+        'limit' => 'Maksimal :max papan per akun.',
     ],
 
 ];

@@ -9,6 +9,7 @@ use App\Livewire\Forms\BoardForm;
 use App\Models\Board;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
@@ -18,6 +19,8 @@ new #[Title('Papan')] class extends Component {
     public BoardForm $form;
 
     public bool $showArchived = false;
+
+    public string $search = '';
 
     #[Locked]
     public ?int $editingId = null;
@@ -31,12 +34,24 @@ new #[Title('Papan')] class extends Component {
     #[Computed]
     public function boards()
     {
+        $term = '%'.addcslashes(trim($this->search), '%_\\').'%';
+
         return Auth::user()->boards()
             ->when($this->showArchived, fn ($query) => $query->whereNotNull('archived_at'))
             ->when(! $this->showArchived, fn ($query) => $query->whereNull('archived_at'))
+            ->when(trim($this->search) !== '', fn ($query) => $query->where(
+                fn ($inner) => $inner->where('title', 'like', $term)->orWhere('description', 'like', $term),
+            ))
             ->withCount('cards')
             ->orderBy('title')
             ->get();
+    }
+
+    public function mount(): void
+    {
+        if (request()->boolean('create')) {
+            $this->openCreate();
+        }
     }
 
     public function openCreate(): void
@@ -73,12 +88,18 @@ new #[Title('Papan')] class extends Component {
         if ($this->editingId === null) {
             $this->authorize('create', Board::class);
 
-            $createBoard->handle(
-                Auth::user(),
-                $this->form->title,
-                $this->form->descriptionOrNull(),
-                $this->form->color,
-            );
+            try {
+                $createBoard->handle(
+                    Auth::user(),
+                    $this->form->title,
+                    $this->form->descriptionOrNull(),
+                    $this->form->color,
+                );
+            } catch (ValidationException $exception) {
+                $this->addError('form.title', $exception->validator->errors()->first());
+
+                return;
+            }
 
             Flux::toast(variant: 'success', text: __('boards.created'));
         } else {
@@ -173,7 +194,14 @@ new #[Title('Papan')] class extends Component {
                 <flux:text class="mt-1">{{ __('boards.subheading') }}</flux:text>
             </div>
 
-            <div class="flex items-center gap-2">
+            <div class="flex flex-wrap items-center gap-2">
+                <flux:input
+                    wire:model.live.debounce.300ms="search"
+                    icon="magnifying-glass"
+                    :placeholder="__('boards.search_placeholder')"
+                    class="max-w-56"
+                />
+
                 <flux:button variant="ghost" wire:click="$toggle('showArchived')">
                     {{ $showArchived ? __('boards.show_active') : __('boards.show_archived') }}
                 </flux:button>

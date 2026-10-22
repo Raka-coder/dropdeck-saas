@@ -7,6 +7,7 @@ use App\Actions\Columns\RenameColumn;
 use App\Models\Board;
 use App\Models\Card;
 use App\Support\Position;
+use Illuminate\Validation\ValidationException;
 
 it('appends new columns with increasing positions', function () {
     $board = Board::factory()->create();
@@ -66,4 +67,14 @@ it('deletes a column and its cards', function () {
 
     $this->assertDatabaseMissing('board_columns', ['id' => $column->id]);
     $this->assertDatabaseMissing('cards', ['column_id' => $column->id]);
+});
+
+it('enforces the configured column limit per board', function () {
+    config(['dropdeck.limits.max_columns' => 1]);
+
+    $board = Board::factory()->create();
+    app(CreateColumn::class)->handle($board, 'Todo');
+
+    expect(fn () => app(CreateColumn::class)->handle($board, 'Doing'))
+        ->toThrow(ValidationException::class);
 });

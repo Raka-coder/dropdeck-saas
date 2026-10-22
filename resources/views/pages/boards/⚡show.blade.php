@@ -1,5 +1,8 @@
 <?php
 
+use App\Actions\Boards\ArchiveBoard;
+use App\Actions\Boards\DeleteBoard;
+use App\Actions\Boards\RestoreBoard;
 use App\Actions\Cards\CreateCard;
 use App\Actions\Cards\DeleteCard;
 use App\Actions\Cards\MoveCard;
@@ -7,13 +10,16 @@ use App\Actions\Cards\UpdateCard;
 use App\Actions\Checklists\AddItem;
 use App\Actions\Checklists\RemoveItem;
 use App\Actions\Checklists\ToggleItem;
+use App\Actions\Checklists\UpdateItem;
 use App\Actions\Columns\CreateColumn;
 use App\Actions\Columns\DeleteColumn;
 use App\Actions\Columns\MoveColumn;
 use App\Actions\Columns\RenameColumn;
 use App\Actions\Labels\AttachLabel;
 use App\Actions\Labels\CreateLabel;
+use App\Actions\Labels\DeleteLabel;
 use App\Actions\Labels\DetachLabel;
+use App\Actions\Labels\UpdateLabel;
 use App\Livewire\Forms\CardForm;
 use App\Livewire\Forms\ChecklistItemForm;
 use App\Livewire\Forms\ColumnForm;
@@ -24,6 +30,7 @@ use App\Models\Card;
 use App\Models\Label;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
@@ -37,6 +44,12 @@ new #[Title('Papan')] class extends Component {
     public ColumnForm $columnForm;
 
     public LabelForm $labelForm;
+
+    #[Locked]
+    public ?int $editingLabelId = null;
+
+    #[Locked]
+    public ?int $editingChecklistItemId = null;
 
     public ChecklistItemForm $checklistForm;
 
@@ -116,7 +129,13 @@ new #[Title('Papan')] class extends Component {
     {
         $this->columnForm->validate();
 
-        app(CreateColumn::class)->handle($this->board, $this->columnForm->title);
+        try {
+            app(CreateColumn::class)->handle($this->board, $this->columnForm->title);
+        } catch (ValidationException $exception) {
+            $this->addError('columnForm.title', $exception->validator->errors()->first());
+
+            return;
+        }
 
         $this->columnForm->reset();
 
@@ -219,7 +238,13 @@ new #[Title('Papan')] class extends Component {
             ],
         );
 
-        app(CreateCard::class)->handle($this->board, $column, $title);
+        try {
+            app(CreateCard::class)->handle($this->board, $column, $title);
+        } catch (ValidationException $exception) {
+            $this->addError("newCardTitles.$columnId", $exception->validator->errors()->first());
+
+            return;
+        }
 
         unset($this->newCardTitles[$columnId], $this->columns);
 
@@ -336,14 +361,87 @@ new #[Title('Papan')] class extends Component {
         $this->labelForm->boardId = $this->board->id;
         $this->labelForm->validate();
 
-        $createLabel->handle($this->board, $this->labelForm->name, $this->labelForm->color);
+        try {
+            $createLabel->handle($this->board, $this->labelForm->name, $this->labelForm->color);
+        } catch (ValidationException $exception) {
+            $this->addError('labelForm.name', $exception->validator->errors()->first());
 
-        $this->labelForm->reset();
-        $this->labelForm->color = '#6366f1';
+            return;
+        }
+
+        $this->resetLabelForm();
 
         unset($this->labels);
 
         Flux::toast(variant: 'success', text: __('cards.labels_created'));
+    }
+
+    public function editLabel(int $labelId): void
+    {
+        $this->authorize('update', $this->board);
+
+        $label = $this->board->labels()->findOrFail($labelId);
+
+        $this->editingLabelId = $label->id;
+        $this->labelForm->boardId = $this->board->id;
+        $this->labelForm->ignoreLabelId = $label->id;
+        $this->labelForm->name = $label->name;
+        $this->labelForm->color = $label->color;
+
+        $this->resetValidation();
+
+        Flux::modal('label-edit')->show();
+    }
+
+    public function updateLabel(UpdateLabel $updateLabel): void
+    {
+        $this->authorize('update', $this->board);
+
+        if ($this->editingLabelId === null) {
+            return;
+        }
+
+        $label = $this->board->labels()->findOrFail($this->editingLabelId);
+
+        $this->labelForm->boardId = $this->board->id;
+        $this->labelForm->ignoreLabelId = $label->id;
+        $this->labelForm->validate();
+
+        $updateLabel->handle($this->board, $label, $this->labelForm->name, $this->labelForm->color);
+
+        $this->resetLabelForm();
+
+        unset($this->labels, $this->selectedCard);
+
+        Flux::modal('label-edit')->close();
+
+        Flux::toast(variant: 'success', text: __('cards.labels_updated'));
+    }
+
+    public function deleteLabel(int $labelId, DeleteLabel $deleteLabel): void
+    {
+        $this->authorize('update', $this->board);
+
+        $label = $this->board->labels()->findOrFail($labelId);
+
+        $deleteLabel->handle($this->board, $label);
+
+        if ($this->editingLabelId === $label->id) {
+            $this->resetLabelForm();
+        }
+
+        unset($this->labels, $this->selectedCard);
+
+        Flux::toast(variant: 'success', text: __('cards.labels_deleted'));
+    }
+
+    private function resetLabelForm(): void
+    {
+        $this->labelForm->reset();
+        $this->labelForm->boardId = $this->board->id;
+        $this->labelForm->color = '#6366f1';
+        $this->editingLabelId = null;
+        $this->resetValidation();
     }
 
     public function addChecklistItem(AddItem $addItem): void
@@ -358,7 +456,13 @@ new #[Title('Papan')] class extends Component {
 
         $this->checklistForm->validate();
 
-        $addItem->handle($card, $this->checklistForm->content);
+        try {
+            $addItem->handle($card, $this->checklistForm->content);
+        } catch (ValidationException $exception) {
+            $this->addError('checklistForm.content', $exception->validator->errors()->first());
+
+            return;
+        }
 
         $this->checklistForm->reset();
 
@@ -399,6 +503,89 @@ new #[Title('Papan')] class extends Component {
         unset($this->selectedCard, $this->columns);
     }
 
+    public function editChecklistItem(int $itemId): void
+    {
+        if ($this->selectedCardId === null) {
+            return;
+        }
+
+        $card = $this->findCard($this->selectedCardId);
+        $item = $card->checklistItems()->findOrFail($itemId);
+
+        $this->authorize('update', $card);
+
+        $this->editingChecklistItemId = $item->id;
+        $this->checklistForm->content = $item->content;
+
+        $this->resetValidation();
+
+        Flux::modal('checklist-edit')->show();
+    }
+
+    public function updateChecklistItem(UpdateItem $updateItem): void
+    {
+        if ($this->selectedCardId === null || $this->editingChecklistItemId === null) {
+            return;
+        }
+
+        $card = $this->findCard($this->selectedCardId);
+        $item = $card->checklistItems()->findOrFail($this->editingChecklistItemId);
+
+        $this->authorize('update', $card);
+
+        $this->checklistForm->validate();
+
+        $updateItem->handle($item, $this->checklistForm->content);
+
+        $this->checklistForm->reset();
+        $this->editingChecklistItemId = null;
+        $this->resetValidation();
+
+        unset($this->selectedCard, $this->columns);
+
+        Flux::modal('checklist-edit')->close();
+
+        Flux::toast(variant: 'success', text: __('cards.checklist_updated'));
+    }
+
+    public function archiveBoard(ArchiveBoard $archive): void
+    {
+        $this->authorize('update', $this->board);
+
+        $archive->handle($this->board);
+
+        Flux::toast(variant: 'success', text: __('boards.archived'));
+
+        $this->redirectRoute('boards.index', navigate: true);
+    }
+
+    public function restoreBoard(RestoreBoard $restore): void
+    {
+        $this->authorize('update', $this->board);
+
+        $restore->handle($this->board);
+
+        Flux::toast(variant: 'success', text: __('boards.restored'));
+    }
+
+    public function confirmDeleteBoard(): void
+    {
+        $this->authorize('delete', $this->board);
+
+        Flux::modal('board-delete-confirm')->show();
+    }
+
+    public function deleteBoard(DeleteBoard $delete): void
+    {
+        $this->authorize('delete', $this->board);
+
+        $delete->handle($this->board);
+
+        Flux::toast(variant: 'success', text: __('boards.deleted'));
+
+        $this->redirectRoute('boards.index', navigate: true);
+    }
+
     private function findColumn(int $columnId): BoardColumn
     {
         return $this->board->columns()->findOrFail($columnId);
@@ -430,9 +617,33 @@ new #[Title('Papan')] class extends Component {
                 </div>
             </div>
 
-            <flux:button variant="ghost" x-on:click="$flux.modal('label-manager').show()">
-                {{ __('cards.manage_labels') }}
-            </flux:button>
+            <div class="flex items-center gap-2">
+                <flux:button variant="ghost" x-on:click="$flux.modal('label-manager').show()">
+                    {{ __('cards.manage_labels') }}
+                </flux:button>
+
+                <flux:dropdown position="bottom" align="end">
+                    <flux:button variant="ghost" size="sm" icon="ellipsis-horizontal" />
+
+                    <flux:menu>
+                        @if ($board->archived_at)
+                            <flux:menu.item wire:click="restoreBoard">
+                                {{ __('boards.restore') }}
+                            </flux:menu.item>
+                        @else
+                            <flux:menu.item wire:click="archiveBoard">
+                                {{ __('boards.archive') }}
+                            </flux:menu.item>
+                        @endif
+
+                        <flux:menu.separator />
+
+                        <flux:menu.item variant="danger" wire:click="confirmDeleteBoard">
+                            {{ __('boards.delete') }}
+                        </flux:menu.item>
+                    </flux:menu>
+                </flux:dropdown>
+            </div>
         </div>
 
         <div wire:sort="handleColumnSort" class="flex flex-1 items-start gap-4 overflow-x-auto pb-4">
@@ -633,7 +844,16 @@ new #[Title('Papan')] class extends Component {
                                     <flux:button
                                         variant="ghost"
                                         size="sm"
+                                        icon="pencil-square"
+                                        :tooltip="__('cards.checklist_edit')"
+                                        wire:click="editChecklistItem({{ $item->id }})"
+                                    />
+
+                                    <flux:button
+                                        variant="ghost"
+                                        size="sm"
                                         icon="trash"
+                                        :tooltip="__('cards.checklist_remove')"
                                         wire:click="removeChecklistItem({{ $item->id }})"
                                     />
                                 </li>
@@ -663,6 +883,21 @@ new #[Title('Papan')] class extends Component {
 
     <livewire:links.create-modal />
 
+    <flux:modal name="board-delete-confirm" class="w-full md:max-w-md">
+        <div class="space-y-5">
+            <flux:heading size="lg">{{ __('boards.delete_confirm') }}</flux:heading>
+            <flux:text>{{ __('boards.delete_hint') }}</flux:text>
+
+            <div class="flex justify-end gap-2">
+                <flux:modal.close>
+                    <flux:button variant="filled">{{ __('boards.cancel') }}</flux:button>
+                </flux:modal.close>
+
+                <flux:button variant="danger" wire:click="deleteBoard">{{ __('boards.delete') }}</flux:button>
+            </div>
+        </div>
+    </flux:modal>
+
     {{-- Label manager --}}
     <flux:modal name="label-manager" class="w-full md:max-w-md">
         <div class="space-y-5">
@@ -673,13 +908,31 @@ new #[Title('Papan')] class extends Component {
             @else
                 <div class="flex flex-wrap gap-2">
                     @foreach ($this->labels as $label)
-                        <span
-                            wire:key="label-row-{{ $label->id }}"
-                            class="rounded-full px-3 py-1 text-xs font-medium text-white"
-                            style="background-color: {{ $label->color }}"
-                        >
-                            {{ $label->name }}
-                        </span>
+                        <div wire:key="label-row-{{ $label->id }}" class="flex items-center gap-1">
+                            <span
+                                class="rounded-full px-3 py-1 text-xs font-medium text-white"
+                                style="background-color: {{ $label->color }}"
+                            >
+                                {{ $label->name }}
+                            </span>
+
+                            <flux:button
+                                size="xs"
+                                variant="ghost"
+                                icon="pencil-square"
+                                :tooltip="__('cards.label_edit')"
+                                wire:click="editLabel({{ $label->id }})"
+                            />
+
+                            <flux:button
+                                size="xs"
+                                variant="ghost"
+                                icon="trash"
+                                :tooltip="__('cards.label_delete')"
+                                wire:click="deleteLabel({{ $label->id }})"
+                                wire:confirm="{{ __('cards.label_delete_confirm') }}"
+                            />
+                        </div>
                     @endforeach
                 </div>
             @endif
@@ -706,6 +959,58 @@ new #[Title('Papan')] class extends Component {
                 </div>
             </form>
         </div>
+    </flux:modal>
+
+    {{-- Edit checklist item --}}
+    <flux:modal name="checklist-edit" class="w-full md:max-w-md">
+        <form wire:submit="updateChecklistItem" class="space-y-4">
+            <flux:heading size="lg">{{ __('cards.checklist_edit') }}</flux:heading>
+
+            <flux:input wire:model="checklistForm.content" :label="__('cards.checklist_item_label')" />
+
+            @error('checklistForm.content')
+                <flux:error>{{ $message }}</flux:error>
+            @enderror
+
+            <div class="flex justify-end gap-2">
+                <flux:modal.close>
+                    <flux:button variant="ghost">{{ __('cards.cancel') }}</flux:button>
+                </flux:modal.close>
+
+                <flux:button variant="primary" type="submit">{{ __('cards.checklist_save') }}</flux:button>
+            </div>
+        </form>
+    </flux:modal>
+
+    {{-- Edit label --}}
+    <flux:modal name="label-edit" class="w-full md:max-w-md">
+        <form wire:submit="updateLabel" class="space-y-4">
+            <flux:heading size="lg">{{ __('cards.label_edit') }}</flux:heading>
+
+            <flux:input wire:model="labelForm.name" :label="__('cards.label_name')" />
+
+            <div>
+                <flux:label>{{ __('cards.label_color') }}</flux:label>
+
+                <input
+                    type="color"
+                    wire:model="labelForm.color"
+                    class="mt-1 h-10 w-16 cursor-pointer rounded-md border border-neutral-300 bg-transparent dark:border-neutral-700"
+                >
+
+                @error('labelForm.color')
+                    <flux:error>{{ $message }}</flux:error>
+                @enderror
+            </div>
+
+            <div class="flex justify-end gap-2">
+                <flux:modal.close>
+                    <flux:button variant="ghost">{{ __('cards.cancel') }}</flux:button>
+                </flux:modal.close>
+
+                <flux:button variant="primary" type="submit">{{ __('cards.label_save') }}</flux:button>
+            </div>
+        </form>
     </flux:modal>
 
     {{-- Rename column --}}
