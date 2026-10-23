@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256"><title>DropDeck logo</title><rect width="256" height="256" rx="57.6" fill="#4F46E5"/><g transform="translate(1.02 1.02) scale(0.992)" fill="none">
+  
+  <path d="
+    M 64 48
+    H 88
+    L 128 88
+    L 168 48
+    H 192
+    Q 208 48 208 64
+    V 192
+    Q 208 208 192 208
+    H 64
+    Q 48 208 48 192
+    V 64
+    Q 48 48 64 48
+    Z" fill="#FFFFFF"/>
+</g></svg>

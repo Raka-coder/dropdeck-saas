@@ -6,11 +6,12 @@
         <meta name="robots" content="noindex, nofollow">
         <meta name="referrer" content="no-referrer">
 
-        <title>{{ $link->label ?? __('droplinks.public.title') }} - {{ config('app.name') }}</title>
+        <title>{{ $link->label ?? __('droplinks.public.title') }} — {{ config('app.name') }}</title>
 
         <link rel="icon" href="/favicon.ico" sizes="any">
         <link rel="icon" href="/favicon.svg" type="image/svg+xml">
         <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+        <meta name="theme-color" content="#4F46E5">
 
         @fonts
         @vite(['resources/css/app.css'])
@@ -18,9 +19,12 @@
     <body class="min-h-screen bg-neutral-100 text-neutral-900 antialiased">
         <main class="flex min-h-screen items-center justify-center p-4">
             <div class="w-full max-w-lg rounded-xl bg-white p-6 shadow-sm ring-1 ring-neutral-200 sm:p-8">
-                <p class="text-xs font-semibold uppercase tracking-widest text-neutral-500">
-                    {{ config('app.name') }}
-                </p>
+                <div class="flex items-center gap-2.5">
+                    <span class="flex size-9 items-center justify-center rounded-lg bg-neutral-900 text-white">
+                        <x-app-logo-icon class="size-5" />
+                    </span>
+                    <span class="text-sm font-semibold tracking-tight text-neutral-900">{{ config('app.name') }}</span>
+                </div>
 
                 @if ($state === 'revoked')
                     <h1 class="mt-4 text-xl font-semibold">{{ __('droplinks.public.revoked_title') }}</h1>
