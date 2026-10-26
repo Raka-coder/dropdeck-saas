@@ -91,6 +91,11 @@ new #[Title('Papan')] class extends Component {
         return $this->board->columns()
             ->with(['cards' => fn ($query) => $query
                 ->with('labels')
+                ->with(['attachments' => fn ($attachmentQuery) => $attachmentQuery
+                    ->whereNotNull('thumbnail_path')
+                    ->select('id', 'card_id', 'original_name', 'thumbnail_path')
+                    ->orderBy('id'),
+                ])
                 ->withCount([
                     'attachments',
                     'checklistItems',
@@ -704,6 +709,33 @@ new #[Title('Papan')] class extends Component {
                                                 style="background-color: {{ $label->color }}"
                                                 title="{{ $label->name }}"
                                             ></span>
+                                        @endforeach
+                                    </div>
+                                @endif
+
+                                @if ($card->attachments->isNotEmpty())
+                                    @php
+                                        $visibleThumbnails = $card->attachments->take(3);
+                                        $hiddenThumbnailCount = $card->attachments->count() - $visibleThumbnails->count();
+                                    @endphp
+                                    <div class="mb-2 grid grid-cols-3 gap-1">
+                                        @foreach ($visibleThumbnails as $attachment)
+                                            <div class="relative aspect-[4/3] overflow-hidden rounded-md bg-neutral-100 dark:bg-neutral-700">
+                                                <img
+                                                    src="{{ route('attachments.thumbnail', $attachment) }}"
+                                                    alt=""
+                                                    loading="lazy"
+                                                    class="h-full w-full object-cover"
+                                                />
+                                                @if ($loop->last && $hiddenThumbnailCount > 0)
+                                                    <span
+                                                        class="absolute inset-0 flex items-center justify-center bg-neutral-900/60 text-xs font-semibold text-white"
+                                                        aria-label="{{ __('attachments.more', ['count' => $hiddenThumbnailCount]) }}"
+                                                    >
+                                                        +{{ $hiddenThumbnailCount }}
+                                                    </span>
+                                                @endif
+                                            </div>
                                         @endforeach
                                     </div>
                                 @endif

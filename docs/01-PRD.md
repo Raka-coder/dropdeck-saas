@@ -6,7 +6,7 @@
 | **Status** | Draft untuk implementasi |
 | **Penulis** | Raka |
 | **Target** | Proyek UTS — Universitas Siliwangi |
-| **Stack** | Laravel 13, Livewire + Flux UI (starter kit, Fortify), PHP 8.5, MariaDB, RustFS (S3), FrankenPHP, Podman (lokal), Dokploy (produksi) |
+| **Stack** | Laravel 13, Livewire + Flux UI (starter kit, Fortify), PHP 8.5.12, MariaDB, RustFS (S3), FrankenPHP, Podman (lokal), Dokploy (produksi) |
 
 ---
 
@@ -233,7 +233,7 @@ Aturan:
 | File berbahaya diunggah dan dibagikan | Penyalahgunaan | Ekstensi terlarang, `nosniff`, selalu `attachment`, opsi scan (fase 2: ClamAV), tombol lapor (fase 2) |
 | Objek yatim di storage | Storage boros | Job hapus idempotent + job rekonsiliasi terjadwal |
 | Perbedaan lokal vs produksi | Bug saat deploy | Image sama; konfigurasi via env; checklist deployment |
-| Ketergantungan versi (PHP 8.5, imagick) | Build gagal | Verifikasi tag image dan ekstensi di awal (lihat README) |
+| Ketergantungan versi (PHP 8.5.12, imagick) | Build gagal | Verifikasi tag image dan ekstensi di awal (lihat README) |
 | Waktu UTS terbatas | Scope tidak selesai | Prioritas P0/P1/P2; urutan milestone |
 
 ## 13. Milestone yang Disarankan

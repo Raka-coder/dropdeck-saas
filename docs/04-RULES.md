@@ -19,7 +19,7 @@ Dokumen terkait: `01-PRD.md` (apa), `02-ARCHITECTURE.md` (bagaimana), `03-DATABA
 
 | Item | Aturan |
 |:---|:---|
-| PHP | 8.5 (minimum sesuai persyaratan Laravel 13). Semua file `declare(strict_types=1);` |
+| PHP | 8.5.12 (minimum patch untuk php2shell). Semua file `declare(strict_types=1);` |
 | Laravel | 13, struktur skeleton standar |
 | UI | Livewire + Flux UI + Tailwind. JANGAN menambah framework JS (Vue/React) |
 | Auth | Fortify (email) + Socialite (Google). JANGAN mengganti ke WorkOS atau menambah provider tanpa keputusan |

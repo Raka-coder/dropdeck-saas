@@ -6,6 +6,12 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
 
+### Security
+- Pin runtime ke PHP `8.5.12` + FrankenPHP `1.13.1` untuk php2shell (CVE-2026-109618, CVE-2026-109619); `session.upload_progress.enabled=0` untuk CVE-2026-115560.
+
+### Fixed
+- Image produksi membersihkan `bootstrap/cache/*.php` sebelum `composer dump-autoload --no-dev` dan menjalankan ulang `package:discover`, sehingga provider dev-only `Laravel\Boost\BoostServiceProvider` tidak lagi dimuat dan `artisan` bisa boot.
+
 ### Changed
 - `vite.config.js` — added `host: '0.0.0.0'`, `port: 5173`, HMR config for container access
 - `compose.yaml` — added `security_opt: label:disable` for all PHP/Vite services (SELinux dev workaround)

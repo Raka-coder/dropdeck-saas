@@ -2,7 +2,7 @@
 
 Dokumen ini menjelaskan arsitektur teknis DropDeck: komponen, alur data, struktur kode, keamanan, container, dan deployment (Podman lokal dan Dokploy produksi). Pasangannya: `01-PRD.md`, `03-DATABASE-SCHEMA.md`, `04-RULES.md`.
 
-> **Catatan verifikasi.** Beberapa detail pihak ketiga (tag image PHP 8.5 FrankenPHP, variabel environment RustFS, format template Dokploy, nama command Octane) bisa berubah antar versi. Bagian yang perlu dicek ditandai **[VERIFIKASI]**; daftar lengkap ada di `README.md`.
+> **Catatan verifikasi.** Beberapa detail pihak ketiga (tag image PHP 8.5.12 FrankenPHP, variabel environment RustFS, format template Dokploy, nama command Octane) bisa berubah antar versi. Bagian yang perlu dicek ditandai **[VERIFIKASI]**; daftar lengkap ada di `README.md`.
 
 ---
 
@@ -49,7 +49,7 @@ Prinsip utama:
 
 | Lapisan | Pilihan | Catatan |
 |:---|:---|:---|
-| Runtime | PHP 8.5 pada FrankenPHP | Mode klasik (Caddy `php_server`); mode worker/Octane opsional |
+| Runtime | PHP 8.5.12 pada FrankenPHP | Mode klasik (Caddy `php_server`); mode worker/Octane opsional |
 | Framework | Laravel 13 | Livewire starter kit, Fortify |
 | UI | Livewire + Flux UI + Tailwind CSS + Alpine.js | Alpine sudah dibundel Livewire |
 | Drag-drop | `wire:sort` native Livewire 4 | Tanpa dependency tambahan; lihat bagian 7.2 |

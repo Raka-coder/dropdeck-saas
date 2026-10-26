@@ -20,6 +20,7 @@ return [
     'auto_upload_hint' => 'Berkas langsung diunggah setelah dipilih.',
     'drop_hint' => 'Klik atau tarik berkas ke area ini',
     'file' => 'berkas',
+    'more' => ':count lampiran lainnya',
 
     'errors' => [
         'empty' => 'Berkas kosong tidak dapat diunggah.',

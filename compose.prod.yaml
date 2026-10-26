@@ -10,6 +10,9 @@ x-php: &php
     context: .
     dockerfile: infra/Containerfile
     target: prod
+    args:
+      FRANKENPHP_VERSION: "1.13.1"
+      PHP_VERSION: "8.5.12"
   image: dropdeck-app:latest
   env_file: .env
   restart: unless-stopped

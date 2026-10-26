@@ -13,6 +13,9 @@ x-php: &php
     context: .
     dockerfile: infra/Containerfile
     target: dev
+    args:
+      FRANKENPHP_VERSION: "1.13.1"
+      PHP_VERSION: "8.5.12"
   image: localhost/dropdeck-dev:latest
   working_dir: /app
   env_file: .env

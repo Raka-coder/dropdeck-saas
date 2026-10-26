@@ -36,6 +36,8 @@ Isi `.env.example.snippet` digabungkan ke `.env.example` dan `.env`.
 
 Prasyarat: Podman 4.x+ dan `podman compose` (provider `podman-compose` atau `docker-compose`).
 
+> **Keamanan PHP:** Runtime dipin ke PHP `8.5.12` + FrankenPHP `1.13.1` untuk php2shell (CVE-2026-109618 / CVE-2026-109619). `session.upload_progress.enabled=0` karena CVE-2026-115560 belum diperbaiki di patch 8.5.12.
+
 ```bash
 # 1) Siapkan .env (gabungkan isi .env.example.snippet)
 cp .env.example .env        # lalu tambahkan blok dari .env.example.snippet
@@ -183,7 +185,7 @@ podman compose exec app php artisan tinker --execute='echo config("services.goog
 - Pengaturan: profil, password, 2FA, appearance, hapus akun.
 - Vault: upload S3-compatible, kuota, penghapusan berkas dan DropLink terkait.
 - Hardening: policy isolasi user, validasi, rate limit, job pruning, reconciliaton kuota.
-- Tes: Pest 204 / 547 assertion lulus; PHPStan level 7 tanpa error; Pint bersih.
+- Tes: Pest 212 / 585 assertion lulus; PHPStan level 7 tanpa error; Pint bersih.
 
 ## Langkah Setelah Container Jalan (M0–M1)
 
@@ -320,8 +322,8 @@ Hal-hal ini bergantung pada versi pihak ketiga dan **belum diuji** di lingkungan
 
 | # | Hal | Di mana | Cara cek |
 |:--|:---|:---|:---|
-| 1 | Tag image `dunglas/frankenphp:1-php8.5` tersedia | `infra/Containerfile` | Docker Hub; ubah `ARG PHP_VERSION` bila perlu |
-| 2 | Ekstensi `imagick` tersedia untuk PHP 8.5 | `infra/Containerfile` | Build berhasil; jika gagal, hapus `imagick` (PDF thumbnail dimatikan) |
+| 1 | Tag image `dunglas/frankenphp:1.13.1-php8.5.12` tersedia | `infra/Containerfile` | Docker Hub; tag sudah dipin untuk php2shell |
+| 2 | Ekstensi `imagick` tersedia untuk PHP 8.5.12 | `infra/Containerfile` | Build berhasil; jika gagal, hapus `imagick` (PDF thumbnail dimatikan) |
 | 3 | Path `policy.xml` ImageMagick untuk izin PDF | `infra/Containerfile` | `identify -list policy` di container |
 | 4 | Nama variabel environment dan user proses RustFS | `compose*.yaml` | Dokumentasi RustFS; bila ada "permission denied", tambah `user: "0:0"` (dev) |
 | 5 | Pin tag RustFS (hindari `latest` di produksi) | `compose.prod.yaml` | Pilih versi yang sudah Anda uji |
