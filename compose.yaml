@@ -1,5 +1,8 @@
 # DropDeck — compose LOKAL (Podman / Docker)
 # Jalankan:  podman compose up -d --build
+# Prasyarat Podman rootless:
+#   systemctl --user enable --now podman.socket
+#   loginctl enable-linger "$USER"
 # Layanan:   app, queue, scheduler, vite, mariadb, phpmyadmin, rustfs, rustfs-init, mailpit
 # Catatan Podman rootless: root di dalam container = user host Anda, jadi file di
 # bind mount tetap dimiliki user host. Label ":Z" dibutuhkan pada sistem SELinux (Fedora/RHEL).
