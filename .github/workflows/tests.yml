@@ -32,6 +32,10 @@ jobs:
           node-version: '22'
 
       - name: Setup Application
+        env:
+          DB_CONNECTION: sqlite
+          DB_DATABASE: ':memory:'
+          DB_URL: ''
         run: composer setup
 
       - name: Run CI Checks
