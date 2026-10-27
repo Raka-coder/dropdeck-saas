@@ -46,6 +46,9 @@ services:
       WAIT_FOR_DB: "true"
     expose:
       - "8000"
+    networks:
+      - default
+      - dokploy-network
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/up"]
       interval: 30s
@@ -60,6 +63,8 @@ services:
       <<: *fixed-env
       RUN_MIGRATIONS: "false"
       WAIT_FOR_DB: "true"
+    healthcheck:
+      disable: true
 
   scheduler:
     <<: *php
@@ -68,6 +73,8 @@ services:
       <<: *fixed-env
       RUN_MIGRATIONS: "false"
       WAIT_FOR_DB: "true"
+    healthcheck:
+      disable: true
 
   mariadb:
     image: docker.io/library/mariadb:11.4
@@ -89,9 +96,8 @@ services:
       start_period: 30s
     restart: unless-stopped
 
-  # [VERIFIKASI] Pin tag versi RustFS yang sudah Anda uji (hindari :latest di produksi).
   rustfs:
-    image: docker.io/rustfs/rustfs:latest
+    image: docker.io/rustfs/rustfs:1.0.4
     environment:
       RUSTFS_ACCESS_KEY: ${AWS_ACCESS_KEY_ID:?isi AWS_ACCESS_KEY_ID}
       RUSTFS_SECRET_KEY: ${AWS_SECRET_ACCESS_KEY:?isi AWS_SECRET_ACCESS_KEY}
@@ -126,6 +132,11 @@ services:
         done
         echo "bucket $$AWS_BUCKET siap"
     restart: "no"
+
+networks:
+  default:
+  dokploy-network:
+    external: true
 
 volumes:
   mariadb_data:
