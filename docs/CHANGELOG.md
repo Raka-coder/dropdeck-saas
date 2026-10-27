@@ -18,12 +18,15 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 - `config/services.php` — added Google OAuth config
 - `app/Models/User.php` — added `google_id`, `avatar_url`, `storage_quota_bytes`, `storage_used_bytes` to `$fillable`/casts + `boards()`, `attachments()`, `dropLinks()` relations
 - `phpunit.xml` — force test env values and use custom bootstrap (`tests/bootstrap.php`)
+- `README.md`, `docs/02-ARCHITECTURE.md`, `docs/04-RULES.md`, `docs/05-IMPLEMENTATION-PLAN.md` — tautkan panduan deployment dan koreksi path `compose.prod.yaml`
+- `README.md` — trusted proxy produksi dibatasi ke CIDR internal (bukan `*`); verifikasi email produksi memakai SMTP, bukan Mailpit
 
 ### Added
 - Google OAuth routes: `auth/google/redirect`, `auth/google/callback`
 - `app/Http/Controllers/Auth/GoogleAuthController.php` — handle Google login/registration
 - Google login button on login & register pages
 - `docs/05-IMPLEMENTATION-PLAN.md` — step-by-step implementation plan (M0–M8)
+- `docs/06-DEPLOYMENT.md` — panduan deployment produksi Dokploy di Proxmox: instalasi, preflight, environment, domain/TLS, backup/restore, troubleshooting
 - `docs/CHANGELOG.md` — this file
 
 ### Added (M2 — Skema DB)

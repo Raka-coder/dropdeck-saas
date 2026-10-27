@@ -351,12 +351,16 @@ prod   → base + kode + vendor + public/build, user non-root, healthcheck
 
 ## 10. Deployment Produksi (Dokploy)
 
+**Panduan operasional lengkap:** [`06-DEPLOYMENT.md`](06-DEPLOYMENT.md).
+
 ### 10.1 Pendekatan
-- Buat **Compose service** di Dokploy dari repositori; gunakan `infra/compose.prod.yaml`.
+- Buat **Compose service** di Dokploy dari repositori; gunakan `compose.prod.yaml` di root repo.
+- `app` harus terhubung ke `dokploy-network` (external) agar Traefik dapat menjangkau `app:8000`; lihat `06-DEPLOYMENT.md` bagian 5.3.
 - Tidak ada `ports:` ke host. Domain dipetakan di Dokploy (Traefik) ke service `app` port `8000`; TLS (Let's Encrypt) otomatis.
 - Variabel environment diisi di tab *Environment* Dokploy (bukan file di repo).
+- Trusted proxy dibatasi ke CIDR internal; `SESSION_SECURE_COOKIE=true`.
 - Volume bernama untuk data: MariaDB dan RustFS.
-- Service `queue` dan `scheduler` memakai image yang sama.
+- Service `queue` dan `scheduler` memakai image yang sama; healthcheck HTTP worker dinonaktifkan.
 - Hanya service `app` yang menjalankan migrasi (`RUN_MIGRATIONS=true`).
 - **phpMyAdmin tidak ada di produksi.** Untuk akses DB gunakan terminal Dokploy atau tunnel sementara.
 
@@ -368,7 +372,7 @@ Folder `dokploy/` berisi **draft** `template.toml` dan catatan. Dokploy Template
 2. Buat OAuth Google untuk domain produksi.
 3. Buat Compose service, isi environment (lihat 8.1), set domain ke `app:8000`.
 4. Deploy. Entrypoint menjalankan `migrate --force` dan cache config.
-5. Buka RustFS console (jangan diekspos publik; akses lewat tunnel/jaringan privat), pastikan bucket `dropdeck` ada dan buat service account khusus aplikasi, lalu perbarui env.
+5. Buka RustFS console (jangan diekspos publik; akses lewat tunnel/jaringan privat), pastikan bucket `dropdeck` ada; buat service account khusus aplikasi jika didukung, lalu perbarui env.
 6. Uji: daftar, upload, buat DropLink, unduh sebagai guest, kirim email.
 
 ### 10.4 Backup dan pemulihan

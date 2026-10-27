@@ -159,6 +159,8 @@ Dokumen terkait: `01-PRD.md` (apa), `02-ARCHITECTURE.md` (bagaimana), `03-DATABA
 4. Volume bernama untuk MariaDB dan RustFS; backup sesuai Architecture 10.4 dan diuji pulihkan.
 5. `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL=https://...`, cookie secure, proxy dipercaya hanya untuk jaringan internal.
 6. Template Dokploy mengikuti format resmi terbaru (verifikasi sebelum rilis).
+7. `app` harus berada di `dokploy-network` agar Traefik dapat menjangkau `app:8000`; healthcheck HTTP `queue`/`scheduler` dinonaktifkan.
+8. Panduan operasional lengkap: [`06-DEPLOYMENT.md`](06-DEPLOYMENT.md).
 
 ## 12. Aturan Keamanan (ringkasan checklist)
 

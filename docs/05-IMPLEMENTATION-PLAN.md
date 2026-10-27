@@ -398,6 +398,8 @@
 
 **Tujuan:** Produksi di Dokploy.
 
+**Panduan lengkap:** [`06-DEPLOYMENT.md`](06-DEPLOYMENT.md) — Proxmox, instalasi Dokploy, preflight, environment, domain/TLS, backup, restore, troubleshooting.
+
 ### Langkah:
 
 1. **Build image prod:**
@@ -406,13 +408,14 @@
    ```
 
 2. **Dokploy:**
+   - Verifikasi preflight di `06-DEPLOYMENT.md` bagian 5 (`trustProxies`, `dokploy-network`, healthcheck worker, RustFS sudah diterapkan; `SESSION_SECURE_COOKIE` diset saat deploy).
    - Create Service → Compose → `compose.prod.yaml`
-   - Environment: semua `*_` variabel
+   - Environment: semua variabel dari `.env.example.snippet`
    - Domain → service `app` → port 8000 → HTTPS
 
 3. **Post-deploy:**
    - `migrate --force` otomatis via entrypoint
-   - Cek RustFS bucket + service account
+   - Cek bucket RustFS; service account khusus jika didukung
    - Test end-to-end: register, upload, buat link, unduh guest
 
 4. **Backup:**

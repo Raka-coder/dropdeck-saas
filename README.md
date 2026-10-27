@@ -23,7 +23,9 @@ dropdeck-docs/
     ├── 01-PRD.md
     ├── 02-ARCHITECTURE.md
     ├── 03-DATABASE-SCHEMA.md
-    └── 04-RULES.md
+    ├── 04-RULES.md
+    ├── 05-IMPLEMENTATION-PLAN.md
+    └── 06-DEPLOYMENT.md
 ```
 
 ## Cara Memakai di Proyek Laravel 13 Anda
@@ -216,9 +218,15 @@ composer require --dev larastan/larastan   # Pest/Pint biasanya sudah ada di sta
 ### 3. Proxy tepercaya (produksi di belakang Traefik) — `bootstrap/app.php`
 ```php
 ->withMiddleware(function (Middleware $middleware) {
-    $middleware->trustProxies(at: '*'); // aman karena container hanya dijangkau Traefik
+    $middleware->trustProxies(at: [
+        '10.0.0.0/8',
+        '172.16.0.0/12',
+        '192.168.0.0/16',
+        'fd00::/8',
+    ]); // jangan pakai '*'
 })
 ```
+Patch lengkap dengan header `X-Forwarded-*`: `docs/06-DEPLOYMENT.md` bagian 5.1.
 
 ### 4. Vite di dalam container — `vite.config.js`
 Config sudah diterapkan di repo ini:
@@ -261,27 +269,37 @@ Jika gagal, periksa log `rustfs` dan `rustfs-init`, serta kredensial di `.env`.
 
 ## Deploy ke Dokploy di Proxmox Self-Hosted
 
+> Panduan langkah demi langkah lengkap: [`docs/06-DEPLOYMENT.md`](docs/06-DEPLOYMENT.md).
+
 ### Prasyarat
-- VM/LXC di Proxmox dengan Ubuntu 24.04 LTS (4 vCPU, 8 GB RAM recommended)
+- VM Proxmox dengan Ubuntu 24.04 LTS (4 vCPU, 8 GB RAM recommended); LXC tidak direkomendasikan untuk Docker/Dokploy
 - Docker + Compose plugin terinstall
-- Dokploy sudah di-install ([install guide](https://docs.dokploy.com/getting-started/installation))
+- Dokploy sudah di-install ([install guide](https://docs.dokploy.com/docs/core/installation))
 - Domain sudah pointing ke IP server
+- Port `80`/`443` terbuka; panel `3000` dibatasi ke VPN/SSH tunnel
 
 ### Langkah Deploy
 
-1. **Build image produksi secara lokal** (untuk memastikan Containerfile valid):
+1. **Verifikasi preflight** di `docs/06-DEPLOYMENT.md` bagian 5:
+   - `trustProxies` ke CIDR internal (sudah diterapkan)
+   - `dokploy-network` untuk `app` (sudah diterapkan)
+   - healthcheck `queue`/`scheduler` dinonaktifkan (sudah diterapkan)
+   - tag RustFS dipin ke `1.0.4` (sudah diterapkan)
+   - `SESSION_SECURE_COOKIE=true` (set di Environment Dokploy)
+
+2. **Build image produksi secara lokal** (untuk memastikan Containerfile valid):
    ```bash
-   podman build -f infra/Containerfile -t dropdeck-prod .
+   podman build -f infra/Containerfile --target prod -t dropdeck-prod .
    ```
 
-2. **Push repositori** (tanpa `.env`, `node_modules/`, `vendor/`).
+3. **Push repositori** (tanpa `.env`, `node_modules/`, `vendor/`).
 
-3. **Dokploy → Create Service → Compose**:
+4. **Dokploy → Create Service → Compose**:
    - Source: repositori
    - Compose file: `compose.prod.yaml`
    - Build context: root proyek
 
-4. **Tab Environment** — isi dari `.env.example.snippet`:
+5. **Tab Environment** — isi dari `.env.example.snippet`:
    - `APP_ENV=production`
    - `APP_DEBUG=false`
    - `APP_URL=https://domain-kamu.com`
@@ -289,32 +307,34 @@ Jika gagal, periksa log `rustfs` dan `rustfs-init`, serta kredensial di `.env`.
    - `DB_*` (host: `mariadb`, port: `3306`)
    - `AWS_*` (RustFS/S3)
    - `GOOGLE_*` (OAuth)
-   - `MAIL_*` (Mailpit/SMTP)
+   - `MAIL_*` (SMTP produksi; jangan Mailpit)
+   - `SESSION_SECURE_COOKIE=true`
    - `DROPDECK_*`
 
-5. **Tab Domains**:
+6. **Tab Domains**:
    - Domain: `domain-kamu.com`
    - Service: `app`
    - Port: `8000`
    - HTTPS: aktifkan (Let's Encrypt via Traefik)
 
-6. **Deploy** — service `app` otomatis jalankan `migrate --force` + `optimize`.
+7. **Deploy** — service `app` otomatis jalankan `migrate --force` + `optimize`.
 
-7. **Verifikasi**:
+8. **Verifikasi**:
    - `https://domain-kamu.com/up` → harus return 200
    - Daftar akun, login
    - Upload file, buat DropLink
    - Unduh sebagai guest
-   - Kirim email verifikasi (cek Mailpit)
+   - Kirim email verifikasi (cek inbox/SMTP produksi)
 
 ### Catatan Produksi
 
 - `compose.prod.yaml` memakai image build dari Containerfile (bukan bind mount), jadi SELinux tidak jadi masalah.
 - Volume `mariadb_data` dan `rustfs_data` persist di server Proxmox.
-- Backup: `podman compose -f compose.prod.yaml exec mariadb mariadb-dump -u root -p<password> dropdeck > backup.sql`
-- Log: `podman compose -f compose.prod.yaml logs -f app`
+- Backup database + RustFS dan uji restore: lihat `docs/06-DEPLOYMENT.md` bagian 10.
+- Log: gunakan tab **Logs** Dokploy atau `docker logs <container-app>`.
+- Jangan mengekspos `3306`, `9000`, `9001`, atau `3000` ke internet.
 
-Detail arsitektur, backup, dan pemulihan: lihat `docs/02-ARCHITECTURE.md` bagian 10.
+Detail arsitektur: lihat `docs/02-ARCHITECTURE.md` bagian 10. Detail operasional: lihat `docs/06-DEPLOYMENT.md`.
 
 ## Daftar [VERIFIKASI]
 
