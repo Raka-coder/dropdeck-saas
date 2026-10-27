@@ -573,7 +573,7 @@ Jangan commit `.env`, `vendor/`, `node_modules/`, atau file backup.
 - [x] Tag RustFS sudah dipin (`1.0.4`).
 - [ ] Kredensial RustFS default sudah diganti.
 - [x] Build prod lokal sukses.
-- [ ] Repo sudah di-push ke `main`.
+- [x] Repo sudah di-push ke `main`.
 - [ ] `APP_KEY` sudah dibuat dan disimpan.
 - [ ] Google OAuth redirect produksi sudah didaftarkan.
 - [ ] SMTP produksi sudah diverifikasi.
@@ -871,9 +871,9 @@ Jika ingin menonaktifkan console RustFS setelah setup, ubah `RUSTFS_CONSOLE_ENAB
 - [ ] Port 80/443 terbuka; 3000 tertutup dari publik.
 - [ ] Environment sudah diisi.
 - [ ] `APP_KEY` sudah disimpan.
-- [ ] Preflight patch sudah diterapkan.
-- [ ] Build lokal sukses.
-- [ ] Repo sudah di-push.
+- [x] Preflight patch sudah diterapkan.
+- [x] Build lokal sukses.
+- [x] Repo sudah di-push.
 
 ### 8.2 Proses deploy
 
